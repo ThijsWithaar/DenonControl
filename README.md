@@ -1,3 +1,7 @@
+[![License: GPL v2](https://img.shields.io/badge/License-GPL%20v2-blue.svg)](LICENSE)
+[![Appveyor build status](https://ci.appveyor.com/api/projects/status/grn3rjfng0dg5wba/branch/master?svg=true)](https://ci.appveyor.com/project/ThijsWithaar/cd-grab/branch/master)
+[![Github all releases](https://img.shields.io/github/downloads/ThijsWithaar/DenonControl/total.svg)](https://GitHub.com/ThijsWithaar/CD-Grab/releases/)
+
 # DenonControl
 
 A Library and UI for controlling [Denon Receivers](https://www.denon.com).

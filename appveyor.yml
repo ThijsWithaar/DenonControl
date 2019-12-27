@@ -1,0 +1,50 @@
+image:
+ - ubuntu1804
+
+configuration:
+ - release
+
+platform:
+ - x64
+
+install:
+ - sh: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+ - sh: sudo add-apt-repository ppa:mhier/libboost-latest
+ - sh: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
+ - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+ - sh: sudo apt update -q
+ - sh: sudo apt install -yq build-essential git cmake clang libboost1.70-dev
+ #libboost-program-options-dev libboost-serialization-dev libboost-system-dev
+ - sh: sudo apt install -yq qtbase5-dev qttools5-dev
+ # Catch2 is not yet in a repo, so build+install ourselves
+ - sh: git clone https://github.com/catchorg/Catch2.git ~/catch2
+ - sh: cmake -H~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
+ - sh: sudo cmake --build ~/catch2.build -- install
+
+
+before_build:
+ - sh: cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_BUILD_TYPE=MinSizeRel -H${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
+
+build_script:
+ - cmake --build ./build -- package
+
+test_script:
+ - cmake --build ./build -- test
+
+artifacts:
+ - path: build/*.deb
+   name: installer
+
+deploy:
+  tag: $(APPVEYOR_REPO_TAG_NAME)
+  release: $(APPVEYOR_REPO_TAG_NAME)
+  description: Release of the build
+  provider: GitHub
+  auth_token:
+    secure: kb0a0ovLyJt0Um5ZFdnFOxalcytOF0kqX1vR+/Q+hMKnQsrVA5z28ivHaNoFVN3r
+  artifact: installer
+  draft: false
+  force_update: true
+  on:
+    branch: master
+    APPVEYOR_REPO_TAG: true
