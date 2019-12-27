@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=0.1
+Name=Denon Control
+Comment=Denon Audio Amplifier control
+Exec=/usr/bin/denonUi
+Icon=denon
+Terminal=false
+Type=Application
+Keywords=audio;music;
+Categories=KDE;AudioVideo;Audio;

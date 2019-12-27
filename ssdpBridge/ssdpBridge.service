@@ -1,0 +1,11 @@
+[Unit]
+Description=SSDP Bridging deamon
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssdpBridge --bridge
+User=root
+ExecReload=/bin/kill -HUP $MAINPID
+
+[Install]
+WantedBy=multi-user.target
