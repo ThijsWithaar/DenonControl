@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
 	po::store(po::parse_command_line(argc, argv, desc), vm);
 	po::notify(vm);
 
-	if (help)
+	if (help || argc == 1)
 		std::cout << desc << "\n";
 
 	if(setup)
