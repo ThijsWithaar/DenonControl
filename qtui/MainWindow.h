@@ -38,13 +38,8 @@ public:
 	MainWindow(QWidget* parent);
 
 private slots:
-	// UI controls
+	// Dialog for selecting a networked amplifier device
 	void onOpenDevice();
-	void onMute(bool);
-	void onVolume(int);
-	void onSource(int);
-	void onSurround(int);
-	void onRoomEq(int);
 
 	// Socket response
 	void onResponse();
@@ -76,8 +71,13 @@ private:
 	void OnCinemaEq(bool on) override;
 	void OnMultiEq(Denon::RoomEqualizer e) override;
 	void OnSpeaker(Denon::Speaker speaker, Denon::SpeakerType type) override;
+	void OnEco(Denon::EcoMode mode) override;
+	void OnSoundMode(Denon::SoundMode mode) override;
 
 private:
+	void SetupCommandConnections();
+	void SetupTelnet();
+	void SetupHttp();
 	void SetupTrayIcon();
 
 	Ui::MainWindow ui;
@@ -89,5 +89,6 @@ private:
 	Denon::Command command;
 	QRect lastGeometry;
 
+	std::array<char, 1<<8> m_telnetRxBuf;
 	std::set<QHostAddress> m_devices;
 };

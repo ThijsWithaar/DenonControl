@@ -69,6 +69,7 @@ bool operator<(const QHostAddress& a, const QHostAddress& b)
 
 //-- MainWindow --
 
+
 MainWindow::MainWindow(QWidget* parent):
 	command(this),
 	settings(this)
@@ -78,22 +79,67 @@ MainWindow::MainWindow(QWidget* parent):
 	connect(ui.actionOpen, &QAction::triggered, this, &MainWindow::onOpenDevice);
 	connect(ui.actionQuit, &QAction::triggered, QApplication::instance(), &QApplication::quit);
 
-	connect(ui.power, &QCheckBox::clicked, [&](bool b){ command.Power(b);} );
-	connect(ui.mute, &QCheckBox::clicked, this, &MainWindow::onMute);
-	connect(ui.sVolume, &QSlider::valueChanged, this, &MainWindow::onVolume);
-	connect(ui.cSource, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::onSource);
-	connect(ui.cSurround, qOverload<int>(&QComboBox::currentIndexChanged), this, &MainWindow::onSurround);
-	connect(ui.cDynEq, &QCheckBox::clicked, [&](bool b){ command.DynamicEq(b); });
-	//connect(ui.cDynVol, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){	command.DynamicVolume(static_cast<Denon::DynamicVolume>(e)); });
-	connect(ui.cCinemaEq, &QCheckBox::clicked, [&](bool b){ command.CinemaEq(b); });
-	connect(ui.cMultiEq, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){	command.MultiEq(static_cast<Denon::RoomEqualizer>(e)); });
+	SetupCommandConnections();
+	SetupTelnet();
+	SetupHttp();
+	SetupTrayIcon();
 
+	// UI state
+	restoreGeometry(settings.value("windowGeometry").toByteArray());
+    restoreState(settings.value("windowState").toByteArray());
+}
+
+
+void MainWindow::SetupCommandConnections()
+{
+	connect(ui.power, &QCheckBox::clicked, [&](bool b){
+		command.Power(b);
+	});
+	connect(ui.mute, &QCheckBox::clicked, [&](bool m){
+		command.Mute(m);
+	});
+	connect(ui.sVolume, &QSlider::valueChanged, [&](int v){
+		command.Volume(Denon::Channel::Master, v);
+	});
+	connect(ui.cSource, qOverload<int>(&QComboBox::currentIndexChanged), [&](int s){
+		command.Input(static_cast<Denon::Source>(s));
+	});
+	connect(ui.cSurround, qOverload<int>(&QComboBox::currentIndexChanged), [&](int s){
+		command.Surround(static_cast<Denon::Surround>(s));
+	});
+	connect(ui.cDynEq, &QCheckBox::clicked, [&](bool b){
+		command.DynamicEq(b);
+	});
+	connect(ui.cDynVol, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
+		command.DynamicVolume(static_cast<Denon::DynamicVolume>(e));
+	});
+	connect(ui.cCinemaEq, &QCheckBox::clicked, [&](bool b){
+		command.CinemaEq(b);
+	});
+	connect(ui.cMultiEq, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
+		command.MultiEq(static_cast<Denon::RoomEqualizer>(e));
+	});
+	connect(ui.cEco, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
+		command.EcoMode(static_cast<Denon::EcoMode>(e));
+	});
+	connect(ui.cSoundMode, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
+		command.SoundMode(static_cast<Denon::SoundMode>(e));
+	});
+}
+
+
+void MainWindow::SetupTelnet()
+{
 	// Telnet connection
 	connect(&m_telnet, &QTcpSocket::readyRead, this, &MainWindow::onResponse);
 	connect(&m_telnet, &QTcpSocket::disconnected, this, &MainWindow::ConnectTelnet);
 	connect(&m_telnet, &QTcpSocket::connected, this, &MainWindow::RequestTelnetStatus);
 	ConnectTelnet();
+}
 
+
+void MainWindow::SetupHttp()
+{
 	// Device scan on network
 	connect(&m_ssdp, &SsdpClient::deviceFound, [&](QString type, QHostAddress addr)
 	{
@@ -104,6 +150,7 @@ MainWindow::MainWindow(QWidget* parent):
 	m_ssdp.scan();
 
 	// HTTP connection
+	m_upnp.Register(QHostAddress(settings.GetIpAddress()));
 	connect(&m_upnp, &UpnpEvents::zoneVolumeChanged, [&](QString zone, double val)
 	{
 		std::cout << "Upnp zone vol changed : " << zone.toStdString() << ", " << val << "\n";
@@ -112,13 +159,15 @@ MainWindow::MainWindow(QWidget* parent):
 	{
 		std::cout << "Upnp vol changed : " << (int)c << ", " << val << "\n";
 	});
-
-	// System trayIcon
-	SetupTrayIcon();
-
-	// UI state
-	restoreGeometry(settings.value("windowGeometry").toByteArray());
-    restoreState(settings.value("windowState").toByteArray());
+	connect(&m_upnp, &UpnpEvents::power, [&](bool p)
+	{
+		SignalBlocker block(ui.power);
+		ui.power->setCheckState(p ? Qt::Checked : Qt::Unchecked);
+	});
+	connect(&m_upnp, &UpnpEvents::mute, [&](QString zone, bool m)
+	{
+		std::cout << "Upnp mute: " << zone.toStdString() << " : " << (int)m << "\n";
+	});
 }
 
 
@@ -150,24 +199,13 @@ void MainWindow::ConnectTelnet()
 	auto deviceAddr = settings.GetIpAddress();
 	std::cout << "MainWindow::ConnectTelnet : " << deviceAddr.toStdString() << "\n";
 	m_telnet.connectToHost(deviceAddr, Denon::TelnetPort);
-
-	m_upnp.Register(QHostAddress(deviceAddr));
 }
 
 
 void MainWindow::RequestTelnetStatus()
 {
 	m_telnet.setTextModeEnabled(true);
-
-	m_telnet.write("PW?\r");
-	m_telnet.write("MU?\r");
-	m_telnet.write("MV?\r");
-	m_telnet.write("SI?\r");
-	m_telnet.write("MS?\r");
-	m_telnet.write("PSDYNEQ ?\r");
-	m_telnet.write("PSDYNVOL ?\r");
-	m_telnet.write("PSCINEMA EQ. ?\r");
-	m_telnet.write("PSMULTEQ: ?\r");
+	command.RequestStatus();
 }
 
 
@@ -245,7 +283,7 @@ void MainWindow::changeEvent(QEvent* e)
 	{
 		case QEvent::Hide:
 		case QEvent::Close:
-			std::cout << "changeEvent close: lastLeft : " << lastGeometry.left() << std::endl;
+			//std::cout << "changeEvent close: lastLeft : " << lastGeometry.left() << std::endl;
 			//lastGeometry = geometry();
 			settings.setValue("windowGeometry", saveGeometry());
 			settings.setValue("windowState", saveState());
@@ -284,43 +322,13 @@ void MainWindow::closeEvent(QCloseEvent *event)
 //-- UI control --
 
 
-void MainWindow::onMute(bool m)
-{
-	command.Mute(m);
-}
-
-
-void MainWindow::onVolume(int v)
-{
-	command.Volume(Denon::Channel::Master, v);
-}
-
-
-void MainWindow::onSource(int s)
-{
-	command.Input(static_cast<Denon::Source>(s));
-}
-
-
-void MainWindow::onSurround(int s)
-{
-	command.Surround(static_cast<Denon::Surround>(s));
-}
-
-
-void MainWindow::onRoomEq(int e)
-{
-	command.RoomEq(static_cast<Denon::RoomEqualizer>(e));
-}
-
-
 void MainWindow::onResponse()
 {
-	auto ba = m_telnet.readLine();
-	std::string msg(ba.data(), ba.data() + ba.size());
+	auto nRead = m_telnet.readLine(m_telnetRxBuf.data(), m_telnetRxBuf.size());
+	std::string_view msg(m_telnetRxBuf.data(), nRead);
 
-	//std::cout << "Denon: " << msg << "\n";
-	statusBar()->showMessage(QString::fromStdString(msg));
+	std::cout << "Denon: " << msg << "\n";
+	statusBar()->showMessage(QString::fromLocal8Bit(msg.data(), msg.size()));
 	Denon::ParseResponse(msg, *this);
 }
 
@@ -330,7 +338,7 @@ void MainWindow::onResponse()
 
 void MainWindow::Send(const std::string& cmd)
 {
-	//std::cout << "Ui: " << cmd << "\n";
+	std::cout << "Ui: " << cmd << "\n";
 	if(m_telnet.isWritable())
 		m_telnet.write(cmd.data(), cmd.size());
 }
@@ -406,8 +414,8 @@ void MainWindow::OnDynamicEq(bool v)
 
 void MainWindow::OnDynamicVolume(Denon::DynamicVolume v)
 {
-	//SignalBlocker block(ui.cDynVol);
-	//ui.cDynVol->setCurrentIndex((int)v);
+	SignalBlocker block(ui.cDynVol);
+	ui.cDynVol->setCurrentIndex((int)v);
 }
 
 
@@ -427,4 +435,22 @@ void MainWindow::OnMultiEq(Denon::RoomEqualizer e)
 
 void MainWindow::OnSpeaker(Denon::Speaker speaker, Denon::SpeakerType type)
 {
+}
+
+
+void MainWindow::OnEco(Denon::EcoMode mode)
+{
+	SignalBlocker block(ui.cEco);
+	ui.cEco->setCurrentIndex((int)mode);
+}
+
+
+void MainWindow::OnSoundMode(Denon::SoundMode mode)
+{
+	ui.cDynEq->setEnabled(mode != Denon::SoundMode::Pure);
+	ui.cDynVol->setEnabled(mode != Denon::SoundMode::Pure);
+	ui.cMultiEq->setEnabled(mode != Denon::SoundMode::Pure);
+
+	SignalBlocker block(ui.cSoundMode);
+	ui.cSoundMode->setCurrentIndex((int)mode);
 }

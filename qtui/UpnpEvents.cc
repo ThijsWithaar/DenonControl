@@ -12,6 +12,7 @@
 
 constexpr int listenPort = 49200;
 constexpr int uPnpPort = 60006;
+constexpr int subscriptionTimeout_sec = 180;
 
 // From http://192.168.4.7:60006/upnp/desc/aios_device/aios_device.xml
 const QString uriAct = "/ACT/event";
@@ -20,58 +21,74 @@ const QString uriAiosGroup = "/upnp/event/AiosServicesDvc/GroupControl";
 const QString uriAiosZone = "/upnp/event/AiosServicesDvc/ZoneControl";
 const QString uriDvcTrans = "/upnp/event/renderer_dvc/AVTransport";
 const QString uriDvcConMan = "/upnp/event/renderer_dvc/ConnectionManager";
-const QString uriDvcRC = "/upnp/event/renderer_dvc/RenderingControl";
+const QString uriDvcRC = "/upnp/event/renderer_dvc/RenderingControl";	// This is where volume changes come from
 // /upnp/event/ams_dvc/ContentDirectory
 // /upnp/event/ams_dvc/ConnectionManager
 
-const std::vector<QString> uris = {uriDvcTrans, uriDvcConMan, uriDvcRC, uriAct};
+const std::vector<QString> uris = {
+	uriDvcTrans, uriDvcConMan, uriDvcRC,
+	uriAct,
+	uriAoisErr, uriAiosGroup, uriAiosZone
+};
 
 
-UpnpEvents::UpnpEvents()
+UpnpEvents::UpnpEvents(QObject* parent):
+	QObject(parent),
+	m_subTimer(this)
 {
 	connect(&m_cbSocket, &QTcpServer::newConnection, this, &UpnpEvents::onCbConnection);
 	m_cbSocket.listen(QHostAddress::Any, listenPort);
 
-	connect(&m_subbSocket, &QTcpSocket::connected, this, &UpnpEvents::onSubsrcibeConnected);
-	connect(&m_subbSocket, &QTcpSocket::disconnected, this, &UpnpEvents::onSubsrcibeDisconnected);
+	connect(&m_subSocket, &QTcpSocket::connected, this, &UpnpEvents::onSubsrcibeConnected);
+	connect(&m_subSocket, &QTcpSocket::disconnected, this, &UpnpEvents::onSubsrcibeDisconnected);
+
+	connect(&m_subTimer, &QTimer::timeout, this, &UpnpEvents::onResubsribe);
+	m_subTimer.start(subscriptionTimeout_sec * 1000);
 }
 
 
 void UpnpEvents::Register(QHostAddress addr)
 {
 	m_deviceAddress = addr;
-	registerIdx = 0;
+	onResubsribe();
+}
+
+
+void UpnpEvents::onResubsribe()
+{
+	if(m_deviceAddress.isNull())
+		return;
+	std::cout << "** UpnpEvents::onResubsribe\n";
+	m_subscribeIdx = 0;
 	onSubsrcibeDisconnected();
 }
 
 
 void UpnpEvents::onSubsrcibeDisconnected()
 {
-	//std::cout << "UpnpEvents::onSubsrcibeDisconnected\n";
-	if(registerIdx < uris.size())
-		m_subbSocket.connectToHost(m_deviceAddress, uPnpPort);
+	if(m_subscribeIdx < uris.size())
+		m_subSocket.connectToHost(m_deviceAddress, uPnpPort);
 }
 
 
 void UpnpEvents::onSubsrcibeConnected()
 {
-	auto deviceAddr = m_subbSocket.peerAddress().toString();
-	auto localAddr = m_subbSocket.localAddress().toString();
+	if(m_subscribeIdx >= uris.size())
+		return;
+
+	auto deviceAddr = m_subSocket.peerAddress().toString();
+	auto localAddr = m_subSocket.localAddress().toString();
 
 	Upnp::Subscribe sub;
 	sub.host = deviceAddr.toStdString() + ":" + std::to_string(uPnpPort);
 	sub.callback = "<http://" + localAddr.toStdString() + ":" + std::to_string(listenPort) + "/>";
 	sub.type = "upnp:event";
-	sub.timeOut = "Second-180";
+	sub.timeOut = "Second-" + std::to_string(subscriptionTimeout_sec);
 
-	if(registerIdx < uris.size())
-	{
-		sub.url = uris[registerIdx++].toStdString();
-		std::string msg = sub;
-		//std::cout << "UpnpEvents::onSubsrcibeConnection\n" << msg << "\n";
-		m_subbSocket.write(msg.data(), msg.size());
-		m_subbSocket.close();
-	}
+	sub.url = uris[m_subscribeIdx++].toStdString();
+	std::string msg = sub;
+	m_subSocket.write(msg.data(), msg.size());
+	m_subSocket.close();
 }
 
 
@@ -142,7 +159,7 @@ void UpnpEvents::onCbProperty(const boost::property_tree::ptree& pt)
 						if(channel == "Master")
 							emit volumeChanged(Denon::Channel::Master, vval);
 						else
-							zoneVolumeChanged(QString::fromStdString(channel), vval);
+							emit zoneVolumeChanged(QString::fromStdString(channel), vval);
 					}
 					else if(key == "Bass")
 						emit volumeChanged(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
@@ -150,6 +167,12 @@ void UpnpEvents::onCbProperty(const boost::property_tree::ptree& pt)
 						emit volumeChanged(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
 					else if(key == "Subwoofer")
 						emit volumeChanged(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
+					else if(key == "Mute")
+					{
+						auto channel = val.get<std::string>("<xmlattr>.channel");
+						auto mval = val.get<int>("<xmlattr>.val");
+						emit mute(QString::fromStdString(channel), mval != 0);
+					}
 				}
 			}
 		} // property

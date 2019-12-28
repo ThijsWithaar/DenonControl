@@ -1,6 +1,8 @@
 #include <Denon/serial.h>
+#include <Denon/string.h>
 
 #include <iostream>
+#include <functional>
 #include <map>
 #include <sstream>
 
@@ -15,12 +17,6 @@ std::string toString(T v)
 	ss << v;
 	return ss.str();
 };
-
-
-bool startswith(std::string str, std::string start)
-{
-	return str.substr(0, start.size()).compare(start) == 0;
-}
 
 
 const std::map<std::string, Source> gSources = {
@@ -39,6 +35,7 @@ const std::map<std::string, Surround> gSurround = {
 	{"STEREO", Surround::Stereo},
 	{"STANDARD", Surround::Standard},
 	{"DOLBY AUDIO-DD+DSUR", Surround::DolbyDigital},
+	{"M CH IN+DSUR", Surround::DtsSurround},
 };
 
 
@@ -83,6 +80,21 @@ const std::map<std::string, SpeakerType> gSpeakerType = {
 };
 
 
+const std::map<std::string, EcoMode> gEcoMode = {
+	{"OFF", EcoMode::Off},
+	{"ON", EcoMode::On},
+	{"AUTO", EcoMode::Auto},
+};
+
+
+const std::map<std::string, SoundMode> gSoundMode = {
+	{"PUR", SoundMode::Pure},
+	{"MUS", SoundMode::Music},
+	{"MOV", SoundMode::Movie},
+	{"GAM", SoundMode::Game},
+};
+
+
 template<typename Enum>
 std::string lu(const std::map<std::string, Enum>& lut, Enum v)
 {
@@ -105,31 +117,30 @@ std::ostream& operator<<(std::ostream& os, Surround s)
 }
 
 
-void ParseResponse(std::string str, Response& response)
+void ParseResponse(std::string_view line, Response& response)
 {
-	if(str.size() < 2)
+	if(line.size() < 3)
 		return;
 
-	std::string cmd = str.substr(0,2);
-	std::string param = str.substr(2, str.size()-3);
+	//std::string cmd = str.substr(0,2);
+	std::string param = std::string(line.substr(2, line.size()-3));
 
 	const std::map<std::string, std::function<void(void)>> handlers = {
-		{"BT"   , [&]()
+		{"BT"  , [&]()
 			{
-				if(param == "TX ON")
-					response.OnBluetooth(true);
-				else if(param == "TX OFF")
-					response.OnBluetooth(false);
+				if(param.substr(2) == "TX")
+					response.OnBluetooth(param == "TX ON");
 			}},
+		{"ECO"  , [&](){ response.OnEco(gEcoMode.at(param.substr(1))); }},
 		{"PWON" , [&](){ response.OnPower(true); }},
 		{"PWOFF", [&](){ response.OnPower(false); }},
 		{"MUON" , [&](){ response.OnMute(true); }},
 		{"MUOFF", [&](){ response.OnMute(false); }},
 		{"MV", [&]()
 			{
-				if(!startswith(str, "MVMAX"))
+				if(!startswith(line, "MVMAX"))
 				{
-					int vol = std::stoi(str.substr(2));
+					int vol = std::stoi(param);
 					if(vol > 100)
 						vol /= 10;		// Denon seems to have implicit comma a start (0..1) values
 					response.OnVolume(Channel::Master, vol);
@@ -148,7 +159,7 @@ void ParseResponse(std::string str, Response& response)
 			}},
 		{"SS", [&]()
 			{
-				if(str == "SSINFAISFSV")
+				if(line == "SSINFAISFSV")
 				{
 					std::string sr = param.substr(10);
 					if(sr == "441")
@@ -161,9 +172,12 @@ void ParseResponse(std::string str, Response& response)
 					auto spkKey = param.substr(3,3);
 					auto spkVal = param.substr(7);
 					if(gSpeaker.count(spkKey) && gSpeakerType.count(spkVal))
-					{
 						response.OnSpeaker(gSpeaker.at(spkKey), gSpeakerType.at(spkVal));
-					}
+				}
+				else if(startswith(param, "SMG"))
+				{
+					auto val = param.substr(4);
+					response.OnSoundMode(gSoundMode.at(val));
 				}
 			}},
 		{"PS", [&]()
@@ -189,7 +203,7 @@ void ParseResponse(std::string str, Response& response)
 				}
 				else if(startswith(param, "ROOM"))
 				{
-					std::string eq = str.substr(10);
+					std::string_view eq = line.substr(10);
 					//std::cout << "ROOM EQ : '" << eq << "'\n";
 				}
 				else if(startswith(param, "DYNEQ"))
@@ -215,7 +229,7 @@ void ParseResponse(std::string str, Response& response)
 
 	for(auto& h: handlers)
 	{
-		if(startswith(str, h.first))
+		if(startswith(line, h.first))
 		{
 			h.second();
 			break;
@@ -230,6 +244,24 @@ void ParseResponse(std::string str, Response& response)
 Command::Command(CommandConnection* conn):
 	pConn(conn)
 {
+}
+
+
+void Command::RequestStatus()
+{
+	pConn->Send(
+		"PW?\r"
+		"MU?\r"
+		"MV?\r"
+		"SI?\r"
+		"MS?\r"
+		"PSDYNEQ ?\r"
+		"PSDYNVOL ?\r"
+		"PSCINEMA EQ. ?\r"
+		"PSMULTEQ: ?\r"
+		"ECO?\r"
+		"SSSMG ?\r"
+	);
 }
 
 
@@ -290,6 +322,19 @@ void Command::CinemaEq(bool v)
 void Command::MultiEq(RoomEqualizer e)
 {
 	pConn->Send("PSMULTEQ:" + lu(gRoomEq, e) + "\r");
+}
+
+
+void Command::EcoMode(Denon::EcoMode e)
+{
+	pConn->Send("ECO" + lu(gEcoMode, e) + "\r");
+}
+
+
+void Command::SoundMode(Denon::SoundMode m)
+{
+	// This doesn't seem to do it:
+	//pConn->Send("SSSMG " + lu(gSoundMode, m) + "\r");
 }
 
 

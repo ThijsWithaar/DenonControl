@@ -49,12 +49,22 @@ enum class SpeakerType
 	None, TwoSpeaker, Small, Large
 };
 
+enum class EcoMode
+{
+	Off, On, Auto
+};
+
+enum class SoundMode
+{
+	Pure, Music, Movie, Game
+};
+
 /// Interface for responses
 class Response
 {
 public:
-	virtual void OnPower(bool) = 0;
-	virtual void OnMute(bool) = 0;
+	virtual void OnPower(bool on) = 0;
+	virtual void OnMute(bool muted) = 0;
 	virtual void OnVolume(Channel c, int v) = 0;
 	virtual void OnInput(Source s) = 0;
 	virtual void OnSurround(Surround s) = 0;
@@ -66,6 +76,8 @@ public:
 	virtual void OnCinemaEq(bool on) = 0;
 	virtual void OnMultiEq(Denon::RoomEqualizer e) = 0;
 	virtual void OnSpeaker(Denon::Speaker speaker, Denon::SpeakerType type) = 0;
+	virtual void OnEco(EcoMode mode) = 0;
+	virtual void OnSoundMode(SoundMode mode) = 0;
 };
 
 } // namespace Denon

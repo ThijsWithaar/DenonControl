@@ -1,7 +1,8 @@
 #pragma once
 
+#include <string>
+
 #include <Denon/denon.h>
-#include <Denon/property.h>
 
 
 namespace Denon {
@@ -9,7 +10,7 @@ namespace Denon {
 constexpr int TelnetPort = 23;
 
 /// Parse string, call `response`
-void ParseResponse(std::string str, Response& response);
+void ParseResponse(std::string_view line, Response& response);
 
 /// Send single commands:
 class CommandConnection
@@ -28,16 +29,19 @@ public:
 
 	Command(CommandConnection* conn);
 
-	void Power(bool);
-	void Mute(bool);
+	void RequestStatus();
+	void Power(bool on);
+	void Mute(bool muted);
 	void Volume(Channel c, int volume);
 	void Input(Source s);
 	void Surround(Surround s);
-	void RoomEq(RoomEqualizer e);	// Super-seded by MultiEq() ?
+	void RoomEq(RoomEqualizer e);	// Superseded by MultiEq() ?
 	void DynamicEq(bool on);
 	void DynamicVolume(DynamicVolume v);
 	void CinemaEq(bool on);
 	void MultiEq(RoomEqualizer e);
+	void EcoMode(EcoMode e);
+	void SoundMode(Denon::SoundMode m);
 
 	void menu(MenuControl mc);
 private:

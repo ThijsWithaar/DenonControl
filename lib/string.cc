@@ -82,7 +82,7 @@ std::string urlDecode(std::string_view data)
 			}
 			else
 			{
-				std::cout << "urlDecode: not found " << data.substr(idx, 10) << "\n";
+				//std::cout << "urlDecode: not found " << data.substr(idx, 10) << "\n";
 				dec.push_back(data[idx++]);
 			}
 		}
