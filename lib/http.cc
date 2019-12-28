@@ -34,6 +34,10 @@ std::map<Query, std::string> g_QueryUrls = {
 	{Query::AppCommand, "/goform/AppCommand.xml"},
 	{Query::DeviceInfo, "/goform/Deviceinfo.xml"},
 	{Query::NetAudioStatus, "/goform/formNetAudio_StatusXml.xml"},
+	// From wireshark capture of Denon android app:
+	//{Query::?, "goform/formiPhoneAppControlJudge.xml"},
+	//{"/goform/AppCommand0300.xml"}		// id : 3, name: GetSoundMode
+
 };
 
 
@@ -113,12 +117,27 @@ DeviceStatus HttpDevice::GetDeviceStatus()
 	DeviceStatus ds;
 
 	auto response = AppCommand({
+		// All id 1:
 		"GetAllZonePowerStatus",
 		"GetAllZoneSource",
+		"GetAllZoneStereo",
 		"GetAllZoneVolume",
 		"GetAllZoneMuteStatus",
 		"GetSurroundModeStatus"
+	// Others, from wireshark capture
+		//"GetECOMeter",
+		//"GetAutoStandby",
+		//"GetSpABStatus"
+		//id: 3, name: "GetSetupLock"
 	});
+	/*
+	<cmd id="3">
+	<name>GetActiveSpeaker</name>
+	<list>
+		<param name="activespall"></param>
+	</list>
+	</cmd>
+	*/
 
 	boost::property_tree::ptree pt = ParseXml(response.body().data());
 	auto rx = pt.get_child("rx");

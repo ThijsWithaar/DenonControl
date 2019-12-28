@@ -61,6 +61,11 @@ QString Settings::GetIpAddress()
 }
 
 
+bool operator<(const QHostAddress& a, const QHostAddress& b)
+{
+	return a.toIPv4Address() < b.toIPv4Address();
+}
+
 
 //-- MainWindow --
 
@@ -84,10 +89,29 @@ MainWindow::MainWindow(QWidget* parent):
 	connect(ui.cMultiEq, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){	command.MultiEq(static_cast<Denon::RoomEqualizer>(e)); });
 
 	// Telnet connection
-	connect(&socket, &QTcpSocket::readyRead, this, &MainWindow::onResponse);
-	connect(&socket, &QTcpSocket::disconnected, this, &MainWindow::ConnectTelnet);
-	connect(&socket, &QTcpSocket::connected, this, &MainWindow::RequestTelnetStatus);
+	connect(&m_telnet, &QTcpSocket::readyRead, this, &MainWindow::onResponse);
+	connect(&m_telnet, &QTcpSocket::disconnected, this, &MainWindow::ConnectTelnet);
+	connect(&m_telnet, &QTcpSocket::connected, this, &MainWindow::RequestTelnetStatus);
 	ConnectTelnet();
+
+	// Device scan on network
+	connect(&m_ssdp, &SsdpClient::deviceFound, [&](QString type, QHostAddress addr)
+	{
+		if(m_devices.count(addr) == 0)
+			std::cout << "Found SSDP device: " << type.toStdString() << " at " << addr.toString().toStdString() << "\n";
+		m_devices.insert(addr);
+	});
+	m_ssdp.scan();
+
+	// HTTP connection
+	connect(&m_upnp, &UpnpEvents::zoneVolumeChanged, [&](QString zone, double val)
+	{
+		std::cout << "Upnp zone vol changed : " << zone.toStdString() << ", " << val << "\n";
+	});
+	connect(&m_upnp, &UpnpEvents::volumeChanged, [&](Denon::Channel c, double val)
+	{
+		std::cout << "Upnp vol changed : " << (int)c << ", " << val << "\n";
+	});
 
 	// System trayIcon
 	SetupTrayIcon();
@@ -100,39 +124,50 @@ MainWindow::MainWindow(QWidget* parent):
 
 void MainWindow::onOpenDevice()
 {
-	std::cout << "MainWindow::onOpenDevice: " << socket.state() << std::endl;
+	m_ssdp.scan();
+
+	std::cout << "MainWindow::onOpenDevice: " << m_telnet.state() << std::endl;
 	auto open = new OpenDialog(this, settings.GetIpAddress());
+
+	//open->SetKnownDevices(m_devices);
+	//connect(&m_ssdp, &SsdpClient::deviceFound, open, &OpenDialog::onDeviceFound);
+
 	if(open->exec() == QDialog::Accepted)
 	{
 		settings.SetIpAddress(open->GetAddress());
-		bool needsConnect = socket.state() != QTcpSocket::SocketState::ConnectedState;
-		socket.close();
+		bool needsConnect = m_telnet.state() != QTcpSocket::SocketState::ConnectedState;
+		m_telnet.close();
 		if(needsConnect)
 			ConnectTelnet();
 	}
+
+	// disconnect(deviceFound) ?
 }
 
 
 void MainWindow::ConnectTelnet()
 {
-	std::cout << "MainWindow::ConnectTelnet : " << settings.GetIpAddress().toStdString() << "\n";
-	socket.connectToHost(settings.GetIpAddress(), Denon::TelnetPort);
+	auto deviceAddr = settings.GetIpAddress();
+	std::cout << "MainWindow::ConnectTelnet : " << deviceAddr.toStdString() << "\n";
+	m_telnet.connectToHost(deviceAddr, Denon::TelnetPort);
+
+	m_upnp.Register(QHostAddress(deviceAddr));
 }
 
 
 void MainWindow::RequestTelnetStatus()
 {
-	socket.setTextModeEnabled(true);
+	m_telnet.setTextModeEnabled(true);
 
-	socket.write("PW?\r");
-	socket.write("MU?\r");
-	socket.write("MV?\r");
-	socket.write("SI?\r");
-	socket.write("MS?\r");
-	socket.write("PSDYNEQ ?\r");
-	socket.write("PSDYNVOL ?\r");
-	socket.write("PSCINEMA EQ. ?\r");
-	socket.write("PSMULTEQ: ?\r");
+	m_telnet.write("PW?\r");
+	m_telnet.write("MU?\r");
+	m_telnet.write("MV?\r");
+	m_telnet.write("SI?\r");
+	m_telnet.write("MS?\r");
+	m_telnet.write("PSDYNEQ ?\r");
+	m_telnet.write("PSDYNVOL ?\r");
+	m_telnet.write("PSCINEMA EQ. ?\r");
+	m_telnet.write("PSMULTEQ: ?\r");
 }
 
 
@@ -281,10 +316,10 @@ void MainWindow::onRoomEq(int e)
 
 void MainWindow::onResponse()
 {
-	auto ba = socket.readLine();
+	auto ba = m_telnet.readLine();
 	std::string msg(ba.data(), ba.data() + ba.size());
 
-	std::cout << "Denon: " << msg << "\n";
+	//std::cout << "Denon: " << msg << "\n";
 	statusBar()->showMessage(QString::fromStdString(msg));
 	Denon::ParseResponse(msg, *this);
 }
@@ -295,9 +330,9 @@ void MainWindow::onResponse()
 
 void MainWindow::Send(const std::string& cmd)
 {
-	std::cout << "Ui: " << cmd << "\n";
-	if(socket.isWritable())
-		socket.write(cmd.data(), cmd.size());
+	//std::cout << "Ui: " << cmd << "\n";
+	if(m_telnet.isWritable())
+		m_telnet.write(cmd.data(), cmd.size());
 }
 
 

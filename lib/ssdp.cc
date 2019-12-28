@@ -9,6 +9,9 @@
 #endif
 
 
+#include <Denon/string.h>
+
+
 namespace Ssdp {
 
 
@@ -83,39 +86,6 @@ std::vector<Interface> GetNetworkInterfaces()
 //-- Parsing --
 
 
-bool startswith(std::string_view data, std::string_view key)
-{
-	return data.compare(0, key.size(), key) == 0;
-}
-
-
-void splitlines(std::string_view data, std::function<void(std::string_view)> cb)
-{
-	size_t nPrev = 0;
-	bool prevEol = false;
-	for(size_t n=0; n<data.size(); n++)
-	{
-		bool eol = data[n] == '\r' || data[n] == '\n';
-		if(!prevEol && eol)
-			cb(data.substr(nPrev, n-nPrev));
-		if(!eol && prevEol)
-			nPrev = n;		// Start of new line
-		prevEol = eol;
-	}
-}
-
-
-std::pair<std::string_view, std::string_view> splitKeyVal(std::string_view line)
-{
-	auto sep = line.find(':');
-	if(sep == std::string_view::npos)
-		return {};
-	auto key = line.substr(0, sep);
-	auto val = line.substr(sep+2);
-	return {key, val};
-}
-
-
 using QueryEntries = std::map<std::string_view, std::string&>;
 
 
@@ -160,6 +130,12 @@ Search ParseSearch(std::string_view message)
 Search::operator std::string()
 {
 	std::string r;
+	r += "M-SEARCH * HTTP/1.1\r\n";
+	r += "HOST: 239.255.255.250:1900\r\n";
+	r += "MAN: \"ssdp:discover\"\r\n";
+	r += "MX: 10\r\n";
+	r += "ST: " + searchType + "\r\n";
+	r += "\r\n";
 	return r;
 }
 

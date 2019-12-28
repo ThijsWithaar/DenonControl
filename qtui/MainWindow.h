@@ -1,5 +1,7 @@
 #pragma once
 
+#include <set>
+
 #include <QMainWindow>
 #include <QTcpSocket>
 #include <QSystemTrayIcon>
@@ -8,6 +10,8 @@
 #include <Denon/denon.h>
 #include <Denon/serial.h>
 
+#include "SsdpClient.h"
+#include "UpnpEvents.h"
 #include "ui_main.h"
 
 
@@ -21,6 +25,7 @@ public:
 	QString GetIpAddress();
 };
 
+bool operator<(const QHostAddress& a, const QHostAddress& b);
 
 class MainWindow :
 	public QMainWindow,
@@ -78,7 +83,11 @@ private:
 	Ui::MainWindow ui;
 	QSystemTrayIcon* trayIcon;
 	Settings settings;
-	QTcpSocket socket;
+	QTcpSocket m_telnet;
+	SsdpClient m_ssdp;
+	UpnpEvents m_upnp;
 	Denon::Command command;
 	QRect lastGeometry;
+
+	std::set<QHostAddress> m_devices;
 };

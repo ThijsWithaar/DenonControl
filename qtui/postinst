@@ -1,2 +1,3 @@
 #!/bin/sh
 xdg-desktop-menu install --novendor /usr/share/applications/denon.desktop
+#systemctl enable ssdpBridge.service
