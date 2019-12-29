@@ -24,4 +24,3 @@ private:
 	QUdpSocket m_socket;
 	std::array<char, 1<<10> m_rxBuf;
 };
-

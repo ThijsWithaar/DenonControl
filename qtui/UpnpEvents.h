@@ -27,6 +27,7 @@ signals:
 	void volumeChanged(Denon::Channel, double volume);
 	void zoneVolumeChanged(QString zone, double volume);
 	void mute(QString channel, bool muted);
+	void wifiSsid(QString ssid);
 
 private slots:
 	void onSubsrcibeConnected();
@@ -35,9 +36,11 @@ private slots:
 
 	void onCbConnection();
 	void onCbRead();
-	void onCbProperty(const boost::property_tree::ptree& pt);
 
 private:
+	void parseProperties(const boost::property_tree::ptree& pt);
+	void parseEvents(const std::string& name, const boost::property_tree::ptree& pt);
+
 	QHostAddress m_deviceAddress;	// IP address of amplifier
 
 	int m_subscribeIdx;				// Index of currently registerd event

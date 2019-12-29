@@ -132,10 +132,8 @@ void ParseResponse(std::string_view line, Response& response)
 					response.OnBluetooth(param == "TX ON");
 			}},
 		{"ECO"  , [&](){ response.OnEco(gEcoMode.at(param.substr(1))); }},
-		{"PWON" , [&](){ response.OnPower(true); }},
-		{"PWOFF", [&](){ response.OnPower(false); }},
-		{"MUON" , [&](){ response.OnMute(true); }},
-		{"MUOFF", [&](){ response.OnMute(false); }},
+		{"PW"   , [&](){ response.OnPower(param == "ON"); }},		// See also 'ZM'
+		{"MU"   , [&](){ response.OnMute(param == "ON"); }},
 		{"MV", [&]()
 			{
 				if(!startswith(line, "MVMAX"))
@@ -148,7 +146,6 @@ void ParseResponse(std::string_view line, Response& response)
 			}},
 		{"MS", [&]()
 			{
-				//std::cout << "Denon surround '" << param << "'\n";
 				if(gSurround.count(param))
 					response.OnSurround(gSurround.at(param));
 			}},
@@ -224,8 +221,8 @@ void ParseResponse(std::string_view line, Response& response)
 						response.OnMultiEq(gRoomEq.at(val));
 				}
 			}},
+		{"ZM", [&](){ response.OnPower(param == "ON"); }},
 	};
-
 
 	for(auto& h: handlers)
 	{
@@ -261,6 +258,7 @@ void Command::RequestStatus()
 		"PSMULTEQ: ?\r"
 		"ECO?\r"
 		"SSSMG ?\r"
+		"ZM?\r"
 	);
 }
 

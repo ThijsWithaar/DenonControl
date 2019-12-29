@@ -40,7 +40,7 @@ public:
 	struct Packet
 	{
 		Header header;
-		std::string_view body;
+		std::string body;
 	};
 
 	HttpParser();
@@ -48,7 +48,8 @@ public:
 	// Current buffer to write into
 	std::pair<char*, size_t> currentBuffer();
 
-	// Mark n bytes as read, returns true if packet is complete
+	// Mark n bytes as read, returns true if packet is complete.
+	// should be called until it returns nullptr to parse all packets
 	const Packet* markRead(size_t n);
 
 private:

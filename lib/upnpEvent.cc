@@ -1,5 +1,6 @@
 #include <Denon/upnpEvent.h>
 
+#include <cstring>
 #include <iostream>
 
 #include <Denon/string.h>
@@ -82,15 +83,21 @@ const HttpParser::Packet* HttpParser::markRead(size_t n)
 		return nullptr;		// This parser requires content-length
 
 	auto dBegin = hEnd + 4;
-	auto dEnd = bufEnd;
-
 	size_t clen = std::stod(clens);
-	size_t dlen = std::distance(dBegin, dEnd);
+	size_t dlen = std::distance(dBegin, bufEnd);
 	if(dlen < clen)
 		return nullptr;		// Data not yet complete
 
-	m_packet.body = std::string_view(dBegin, dlen);
-	m_idx = 0;
+	// Need to copy, because of memmove below
+	m_packet.body = std::string_view(dBegin, clen);
+
+	m_idx = dlen - clen;
+	if(dlen > clen)
+	{
+		std::cout << "*HttpParser: keeping " << m_idx << " bytes\n";
+		std::memmove(m_buf.data(), dBegin+clen, dlen - clen);
+	}
+
 	return &m_packet;
 }
 

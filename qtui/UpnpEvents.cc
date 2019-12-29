@@ -118,7 +118,7 @@ void UpnpEvents::onCbRead()
 		bodyss << urlDecode(pPacket->body);
 		boost::property_tree::ptree pt;
 		boost::property_tree::read_xml(bodyss, pt);
-		onCbProperty(pt);
+		parseProperties(pt);
 
 		Upnp::Response resp(200);
 		resp.fields["CONNECTION"] = "close";
@@ -131,50 +131,68 @@ void UpnpEvents::onCbRead()
 }
 
 
-void UpnpEvents::onCbProperty(const boost::property_tree::ptree& pt)
+void UpnpEvents::parseProperties(const boost::property_tree::ptree& pt)
 {
-	if(auto ps = pt.get_child_optional("e:propertyset"))
+	if(auto events = pt.get_child_optional("e:propertyset.e:property.LastChange.Event"))
 	{
-		for(auto& prop: *ps)
+		for(auto& event: *events)
 		{
-			if(auto friendlyName = prop.second.get_child_optional("LastChange.Event.FriendlyName"))
+			parseEvents(event.first, event.second);
+		}
+	}
+}
+
+
+void UpnpEvents::parseEvents(const std::string& name, const boost::property_tree::ptree& pt)
+{
+	if(name == "FriendlyName")
+	{
+		auto val = pt.get<std::string>("<xmlattr>.val");
+		std::cout << "Friendly Device name: " << val << "\n";
+		emit deviceName(QString::fromStdString(val));
+	}
+	else if(name == "DevicePower")
+	{
+		auto val = pt.get<std::string>("<xmlattr>.val");
+		emit power(val == "ON");
+	}
+	else if(name == "InstanceID")
+	{
+		for(auto& [key, val]: pt)
+		{
+			if(key == "Volume")
 			{
-				auto val = friendlyName->get<std::string>("<xmlattr>.val");
-				std::cout << "Friendly Device name: " << val << "\n";
-				emit deviceName(QString::fromStdString(val));
+				auto channel = val.get<std::string>("<xmlattr>.channel");
+				auto vval = val.get<double>("<xmlattr>.val");
+				if(channel == "Master")
+					emit volumeChanged(Denon::Channel::Master, vval);
+				else
+					emit zoneVolumeChanged(QString::fromStdString(channel), vval);
 			}
-			else if(auto devPower = prop.second.get_child_optional("LastChange.Event.DevicePower"))
+			else if(key == "Bass")
+				emit volumeChanged(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
+			else if(key == "Treble")
+				emit volumeChanged(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
+			else if(key == "Subwoofer")
+				emit volumeChanged(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
+			else if(key == "Mute")
 			{
-				auto val = devPower->get<std::string>("<xmlattr>.val");
-				emit power(val == "ON");
+				auto channel = val.get<std::string>("<xmlattr>.channel");
+				auto mval = val.get<int>("<xmlattr>.val");
+				emit mute(QString::fromStdString(channel), mval != 0);
 			}
-			else if(auto iid = prop.second.get_child_optional("LastChange.Event.InstanceID"))
-			{
-				for(auto& [key, val]: *iid)
-				{
-					if(key == "Volume")
-					{
-						auto channel = val.get<std::string>("<xmlattr>.channel");
-						auto vval = val.get<double>("<xmlattr>.val");
-						if(channel == "Master")
-							emit volumeChanged(Denon::Channel::Master, vval);
-						else
-							emit zoneVolumeChanged(QString::fromStdString(channel), vval);
-					}
-					else if(key == "Bass")
-						emit volumeChanged(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
-					else if(key == "Treble")
-						emit volumeChanged(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
-					else if(key == "Subwoofer")
-						emit volumeChanged(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
-					else if(key == "Mute")
-					{
-						auto channel = val.get<std::string>("<xmlattr>.channel");
-						auto mval = val.get<int>("<xmlattr>.val");
-						emit mute(QString::fromStdString(channel), mval != 0);
-					}
-				}
-			}
-		} // property
-	} // propertyset
+		}
+	}
+	else if(name == "WifiApSsid")
+	{
+		auto mval = pt.get<std::string>("<xmlattr>.val");
+		emit wifiSsid(QString::fromStdString(mval));
+	}
+	else if(name == "SurroundSpeakerConfig")
+	{
+		/*auto cfg = pt.get<std::string>("<xmlattr>.val");
+		std::stringstream ss;
+		ss << urlDecode(cfg);
+		std::cout << "* SurroundSpeakerConfig *\n" << ss.str() << "\n";*/
+	}
 }
