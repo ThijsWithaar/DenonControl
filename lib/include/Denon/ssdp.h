@@ -21,7 +21,7 @@ struct Interface
 	std::string name, ip, netmask;
 };
 
-/// SSDP Search information
+/// SSDP Search request
 struct Search
 {
 	std::string searchType;		/// urn to search for

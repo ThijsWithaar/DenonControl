@@ -9,6 +9,7 @@
 #endif
 
 
+#include <Denon/http.h>
 #include <Denon/string.h>
 
 
@@ -129,13 +130,14 @@ Search ParseSearch(std::string_view message)
 
 Search::operator std::string()
 {
-	std::string r;
-	r += "M-SEARCH * HTTP/1.1\r\n";
-	r += "HOST: 239.255.255.250:1900\r\n";
-	r += "MAN: \"ssdp:discover\"\r\n";
-	r += "MX: 10\r\n";
-	r += "ST: " + searchType + "\r\n";
-	r += "\r\n";
+	Denon::Http::BlockingConnection::Request r;
+	r.method = Denon::Http::BlockingConnection::Method::MSearch;
+	r.path = "*";
+
+	r.fields["HOST"] = "239.255.255.250:1900";
+	r.fields["MAN"] = "\"ssdp:discover\"";
+	r.fields["MX"] = "10";
+	r.fields["ST"] = searchType;
 	return r;
 }
 

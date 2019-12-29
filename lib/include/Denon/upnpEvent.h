@@ -5,58 +5,13 @@
 #include <string>
 #include <string_view>
 
+#include <boost/property_tree/ptree.hpp>
 
+#include <Denon/denon.h>
+
+
+namespace Denon {
 namespace Upnp {
-
-
-/// Similar to boost::beast. Operates on buffers, to allow
-/// integration into Qt
-class Response
-{
-public:
-	Response(int statusCode);
-
-	operator std::string();
-
-	std::map<std::string, std::string> fields;
-	std::string body;
-private:
-	int m_statusCode;
-};
-
-/*
-	Http parser, assuming messages come in pieces.
-		currentBuffer() and markRead() put data into the buffer
-*/
-class HttpParser
-{
-public:
-	struct Header
-	{
-		std::string method, url;
-		std::map<std::string, std::string> options;
-	};
-
-	struct Packet
-	{
-		Header header;
-		std::string body;
-	};
-
-	HttpParser();
-
-	// Current buffer to write into
-	std::pair<char*, size_t> currentBuffer();
-
-	// Mark n bytes as read, returns true if packet is complete.
-	// should be called until it returns nullptr to parse all packets
-	const Packet* markRead(size_t n);
-
-private:
-	std::array<char, 1<<14> m_buf;
-	size_t m_idx;
-	Packet m_packet;
-};
 
 /// Subscribe message
 struct Subscribe
@@ -70,5 +25,24 @@ struct Subscribe
 	operator std::string();
 };
 
+class EventHandler
+{
+public:
+	virtual void onDeviceName(std::string_view name) = 0;
+	virtual void onPower(bool on) = 0;
+	virtual void onVolume(Denon::Channel c, double vol) = 0;
+	virtual void onZoneVolume(std::string_view name, double vol) = 0;
+	virtual void onMute(std::string_view channel, bool muted) = 0;
+	virtual void wifiSsid(std::string_view ssid) = 0;
+};
+
+class EventParser
+{
+public:
+	void operator()(std::string_view body, EventHandler& handler);
+private:
+	void parseEvents(const std::string& name, const boost::property_tree::ptree& pt, EventHandler& handler);
+};
 
 } // namespace Upnp
+} // namespace Denon

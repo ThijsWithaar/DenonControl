@@ -23,11 +23,19 @@ A Library and UI for controlling [Denon Receivers](https://www.denon.com).
 
 # Denon Protocols
 
-Denon receivers have two ways on communicating. On is the legacy [serial protocol](https://usa.denon.com/us/product/hometheater/receivers/avr3808ci?docname=AVR-3808CISerialProtocol_Ver520a.pdf) which is reachable over telnet (port 23). The other is a combination of HTTP based protocols:
+Denon receivers have two ways on communicating. On is the legacy [serial protocol](https://usa.denon.com/us/product/hometheater/receivers/avr3808ci?docname=AVR-3808CISerialProtocol_Ver520a.pdf) which is reachable over telnet (port 23). The other is a combination of HTTP based protocols. An overview is given in the table below:
 
-- SSDP for discovering the device (as long as it's on the same subnet)
-- Upnp Events for device updates
-- Http-Get based commands
 
-Although the latter does seems to have more features, it is also a whole lot more complex. As far as I know, no documentation exists. Since most of the protocol is xml-based, using [wireshark](https://www.wireshark.org/) and Denon's [Android app](https://play.google.com/store/apps/details?id=com.dmholdings.DenonAVRRemote) make it relatively easy to figure things out.
+| Port | Protocol | Path | description |
+| ---- | -------- | ---- | ------------|
+|   27 | telnet   |      | serial commands/events |
+| 8080 | http     | goform/Deviceinfo.xml | Android API |
+| 8080 | http     | goform/AppCommand.xml | Android API |
+| 239.255.255.250:1900 | ssdp | | SSDP Device discovery |
+| 60006 | scdp | upnp/desc/aios_device/aios_device.xml | UPnP Event description |
+| 60006 | http | upnp/scpd/renderer_dvc/RenderingControl.xml | SCDP control |
+| (listen) | http | upnp/event/renderer_dvc/RenderingControl | Volume change events |
+
+
+Although both the Android and UPnP protocols does seem to have more features, they are also a whole lot more complex with xml-wrapped-in-xml constructions. As far as I know, no documentation exists. Since most of the protocol is xml-based, using [wireshark](https://www.wireshark.org/) and Denon's [Android app](https://play.google.com/store/apps/details?id=com.dmholdings.DenonAVRRemote) make it relatively easy to figure things out.
 This does mean that the parsing code in this archive is far from complete.

@@ -13,6 +13,11 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
+if(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" AND UNIX)
+	add_compile_options(-fdata-sections -ffunction-sections)
+	add_link_options(-Wl,--gc-sections -Wl,--strip-all)
+endif()
+
 add_subdirectory(lib)
 add_subdirectory(ssdpBridge)
 add_subdirectory(qtui)

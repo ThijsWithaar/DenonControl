@@ -1,92 +1,110 @@
 #pragma once
 
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
+#include <map>
 
-
-#include <boost/asio/streambuf.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/connect.hpp>
-#include <boost/asio/read_until.hpp>
-
+//#define HAS_BOOST_BEAST
+#ifdef HAS_BOOST_BEAST
+	#include <boost/beast/core.hpp>
+	#include <boost/asio/ip/tcp.hpp>
+#endif
 
 #include <Denon/denon.h>
 #include <Denon/serial.h>
 
 
 namespace Denon {
+namespace Http {
 
+/**
+	Http parser, assuming messages come in pieces.
+	Similar to boost::beast. Operates on buffers, to allow integration into Qt
 
-namespace beast = boost::beast;		// from <boost/beast.hpp>
-namespace http = beast::http;		// from <boost/beast/http.hpp>
-namespace asio = boost::asio;		// from <boost/asio.hpp>
-using tcp = asio::ip::tcp;			// from <boost/asio/ip/tcp.hpp>
-
-// https://blue-pc.net/2013/12/28/denon-av-reciever-ueber-http-steuern/
-//
-// Connect to
-//	http://192.168.4.7:8080/goform/Deviceinfo.xml
-
-struct DeviceCapabilities
-{
-};
-
-struct ZoneCapabilities
-{
-};
-
-struct DeviceInfo
-{
-	int version;
-	int commApiVersion;
-	std::string catName;
-	std::string modelName;
-	std::string manualModelName;
-	std::string mac;
-	DeviceCapabilities capabilities;
-	std::vector<ZoneCapabilities> zoneCapabilities;
-};
-
-struct ZoneStatus
-{
-	std::string power;
-	std::string source;
-	double volume;
-	std::string mute;
-};
-
-struct DeviceStatus
-{
-	std::map<std::string, ZoneStatus> zones;
-	std::string surround;
-};
-
-class HttpDevice:
-	public CommandConnection
+	currentBuffer() and markRead() put data into the buffer
+*/
+class Parser
 {
 public:
-	HttpDevice(std::string host, int port=8080);
+	struct Header
+	{
+		std::string method, url;
+		std::map<std::string, std::string> options;
+	};
 
-	DeviceInfo GetDeviceInfo();
+	struct Packet
+	{
+		Header header;
+		std::string body;
+	};
 
-	DeviceStatus GetDeviceStatus();
+	Parser();
 
-	/// CommandConnection
-	void Send(const std::string&) override;
+	// Current buffer to write into
+	std::pair<char*, size_t> currentBuffer();
+
+	// Mark n bytes as read, returns true if packet is complete.
+	// should be called until it returns nullptr to parse all packets
+	const Packet* markRead(size_t n);
 
 private:
-	/// HTTP get request, for relative path
-	http::response<http::dynamic_body> Get(std::string path);
-	http::response<http::dynamic_body> Post(std::string path, std::string body);
-
-	// Application Command
-	http::response<http::dynamic_body> AppCommand(std::vector<std::string> attributes);
-
-	asio::io_context m_ioc;
-	tcp::socket m_socket;
-	std::string m_host;
-	boost::beast::flat_buffer m_buffer;
+	std::array<char, 1<<14> m_buf;
+	size_t m_idx;
+	Packet m_packet;
 };
 
+/// Interface for an HTTP connection, to allow both boost::asio and Qt
+class BlockingConnection
+{
+public:
+	enum class Method
+	{
+		Get, Post, Search, Notify, Subscribe, MSearch
+	};
 
+	struct Request
+	{
+		Method method;
+		std::string path;	///< relative path
+		std::map<std::string, std::string> fields;
+		std::string body;
+
+		operator std::string();
+	};
+
+	struct Response
+	{
+		int status;
+		std::map<std::string, std::string> fields;
+		std::string body;
+
+		operator std::string();
+	};
+
+	virtual ~BlockingConnection() = default;
+
+	virtual const Response& Http(const Request& req) = 0;
+};
+
+#ifdef HAS_BOOST_BEAST
+/// Http connection using boost::beast
+class BeastConnection: public BlockingConnection
+{
+public:
+	//using asio = boost::asio;		// from <boost/asio.hpp>
+	using tcp = boost::asio::ip::tcp;			// from <boost/asio/ip/tcp.hpp>
+
+	BeastConnection(boost::asio::io_context& ioc, std::string host, int port);
+
+	const Response& Http(const Request& req) override;
+
+private:
+	std::string m_host;
+	boost::beast::flat_buffer m_buffer;
+	tcp::socket m_socket;
+
+	Response m_response;
+};
+#endif
+
+
+} // namespace Http
 } // namespace Denon

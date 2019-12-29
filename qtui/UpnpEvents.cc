@@ -3,6 +3,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 
 
+#include <Denon/http.h>
 #include <Denon/string.h>
 #include <Denon/upnpEvent.h>
 
@@ -12,7 +13,7 @@
 
 constexpr int listenPort = 49200;
 constexpr int uPnpPort = 60006;
-constexpr int subscriptionTimeout_sec = 180;
+constexpr int subscriptionTimeout_sec = 5*60;
 
 // From http://192.168.4.7:60006/upnp/desc/aios_device/aios_device.xml
 const QString uriAct = "/ACT/event";
@@ -79,7 +80,7 @@ void UpnpEvents::onSubsrcibeConnected()
 	auto deviceAddr = m_subSocket.peerAddress().toString();
 	auto localAddr = m_subSocket.localAddress().toString();
 
-	Upnp::Subscribe sub;
+	Denon::Upnp::Subscribe sub;
 	sub.host = deviceAddr.toStdString() + ":" + std::to_string(uPnpPort);
 	sub.callback = "<http://" + localAddr.toStdString() + ":" + std::to_string(listenPort) + "/>";
 	sub.type = "upnp:event";
@@ -110,17 +111,14 @@ void UpnpEvents::onCbRead()
 
 	auto dst = m_cbParser.currentBuffer();
 	auto nRead = socket->read(dst.first, dst.second);
-	if(auto pPacket = m_cbParser.markRead(nRead))
+	while(auto pPacket = m_cbParser.markRead(nRead))
 	{
-		//std::cout << "Decoded:\n" << urlDecode(pPacket->body) << std::endl;
+		nRead = 0;
+		Denon::Upnp::EventParser parser;
+		parser(pPacket->body, *this);
 
-		std::stringstream bodyss;
-		bodyss << urlDecode(pPacket->body);
-		boost::property_tree::ptree pt;
-		boost::property_tree::read_xml(bodyss, pt);
-		parseProperties(pt);
-
-		Upnp::Response resp(200);
+		Denon::Http::BlockingConnection::Response resp;
+		resp.status = 200;
 		resp.fields["CONNECTION"] = "close";
 		resp.fields["CONTENT-TYPE"] = "text/html";
 		resp.body = "<html><body><h1>200 OK</h1></body></html>";
@@ -131,68 +129,37 @@ void UpnpEvents::onCbRead()
 }
 
 
-void UpnpEvents::parseProperties(const boost::property_tree::ptree& pt)
+void UpnpEvents::onDeviceName(std::string_view name)
 {
-	if(auto events = pt.get_child_optional("e:propertyset.e:property.LastChange.Event"))
-	{
-		for(auto& event: *events)
-		{
-			parseEvents(event.first, event.second);
-		}
-	}
+	emit deviceName(QString::fromStdString(std::string(name)));
 }
 
 
-void UpnpEvents::parseEvents(const std::string& name, const boost::property_tree::ptree& pt)
+void UpnpEvents::onPower(bool on)
 {
-	if(name == "FriendlyName")
-	{
-		auto val = pt.get<std::string>("<xmlattr>.val");
-		std::cout << "Friendly Device name: " << val << "\n";
-		emit deviceName(QString::fromStdString(val));
-	}
-	else if(name == "DevicePower")
-	{
-		auto val = pt.get<std::string>("<xmlattr>.val");
-		emit power(val == "ON");
-	}
-	else if(name == "InstanceID")
-	{
-		for(auto& [key, val]: pt)
-		{
-			if(key == "Volume")
-			{
-				auto channel = val.get<std::string>("<xmlattr>.channel");
-				auto vval = val.get<double>("<xmlattr>.val");
-				if(channel == "Master")
-					emit volumeChanged(Denon::Channel::Master, vval);
-				else
-					emit zoneVolumeChanged(QString::fromStdString(channel), vval);
-			}
-			else if(key == "Bass")
-				emit volumeChanged(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
-			else if(key == "Treble")
-				emit volumeChanged(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
-			else if(key == "Subwoofer")
-				emit volumeChanged(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
-			else if(key == "Mute")
-			{
-				auto channel = val.get<std::string>("<xmlattr>.channel");
-				auto mval = val.get<int>("<xmlattr>.val");
-				emit mute(QString::fromStdString(channel), mval != 0);
-			}
-		}
-	}
-	else if(name == "WifiApSsid")
-	{
-		auto mval = pt.get<std::string>("<xmlattr>.val");
-		emit wifiSsid(QString::fromStdString(mval));
-	}
-	else if(name == "SurroundSpeakerConfig")
-	{
-		/*auto cfg = pt.get<std::string>("<xmlattr>.val");
-		std::stringstream ss;
-		ss << urlDecode(cfg);
-		std::cout << "* SurroundSpeakerConfig *\n" << ss.str() << "\n";*/
-	}
+	emit power(on);
+}
+
+
+void UpnpEvents::onVolume(Denon::Channel c, double vol)
+{
+	emit volumeChanged(c, vol);
+}
+
+
+void UpnpEvents::onZoneVolume(std::string_view name, double vol)
+{
+	emit zoneVolumeChanged(QString::fromStdString(std::string(name)), vol);
+}
+
+
+void UpnpEvents::onMute(std::string_view channel, bool muted)
+{
+	emit mute(QString::fromStdString(std::string(channel)), muted);
+}
+
+
+void UpnpEvents::wifiSsid(std::string_view ssid)
+{
+	emit wifiSsid(QString::fromStdString(std::string(ssid)));
 }

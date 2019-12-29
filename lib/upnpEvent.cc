@@ -3,118 +3,102 @@
 #include <cstring>
 #include <iostream>
 
+#include <boost/property_tree/ptree.hpp>
+#include <boost/property_tree/xml_parser.hpp>
+
 #include <Denon/string.h>
+#include <Denon/http.h>
 
 
+namespace Denon {
 namespace Upnp {
-
-
-void ParseHttpHeader(HttpParser::Header& dst, std::string_view data)
-{
-	//std::cout << "ParseHttpHeader\n" << data << "\n";
-	dst.method.clear();
-	splitlines(data, [&](auto line)
-	{
-		if(dst.method.empty())
-		{
-			auto els = split(line);
-			dst.method = els[0];
-			dst.url = els[1];
-			return;
-		}
-		auto [key, value] = splitKeyVal(line);
-		dst.options[std::string(key)] = value;
-	});
-}
-
-
-//-- Response --
-
-
-Response::Response(int statusCode):
-	m_statusCode(statusCode)
-{
-}
-
-
-Response::operator std::string()
-{
-	std::string r;
-	r = "HTTP/1.1 " + std::to_string(m_statusCode) + " OK\r\n";
-	r += "CONTENT-LENGTH: " + std::to_string(body.size()) + "\r\n";
-	for(auto& f: fields)
-	{
-		r += f.first + ": " + f.second + "\r\n";
-	}
-	r += "\r\n";
-	r += body;
-	return r;
-}
-
-
-//-- HttpParser --
-
-
-HttpParser::HttpParser():
-	m_idx(0)
-{
-}
-
-
-std::pair<char*, size_t> HttpParser::currentBuffer()
-{
-	return {m_buf.data() + m_idx, m_buf.size() - m_idx};
-}
-
-
-const HttpParser::Packet* HttpParser::markRead(size_t n)
-{
-	m_idx += n;
-	auto bufEnd = m_buf.data() + m_idx;
-
-	constexpr std::array<char, 4> eoh = {'\r','\n','\r','\n'};
-	auto hEnd = std::search(m_buf.data(), bufEnd, eoh.begin(), eoh.end());
-	if(hEnd == bufEnd)
-		return nullptr;
-
-	ParseHttpHeader(m_packet.header, std::string_view(m_buf.data(), hEnd-m_buf.data()));
-	auto clens = m_packet.header.options["CONTENT-LENGTH"];
-	if(clens.empty())
-		return nullptr;		// This parser requires content-length
-
-	auto dBegin = hEnd + 4;
-	size_t clen = std::stod(clens);
-	size_t dlen = std::distance(dBegin, bufEnd);
-	if(dlen < clen)
-		return nullptr;		// Data not yet complete
-
-	// Need to copy, because of memmove below
-	m_packet.body = std::string_view(dBegin, clen);
-
-	m_idx = dlen - clen;
-	if(dlen > clen)
-	{
-		std::cout << "*HttpParser: keeping " << m_idx << " bytes\n";
-		std::memmove(m_buf.data(), dBegin+clen, dlen - clen);
-	}
-
-	return &m_packet;
-}
 
 
 Subscribe::operator std::string()
 {
-	std::string r;
-	r += "SUBSCRIBE " + url + " HTTP/1.1\r\n";
-	r += "HOST: " + host + "\r\n";
-	r += "CALLBACK: " + callback + "\r\n";
-	r += "NT: " + type + "\r\n";
-	r += "TIMEOUT: " + timeOut + "\r\n";
-	r += "\r\n";
-
+	Http::BlockingConnection::Request r;
+	r.method = Http::BlockingConnection::Method::Subscribe;
+	r.path = url;
+	r.fields["HOST"] = host;
+	r.fields["CALLBACK"] = callback;
+	r.fields["NT"] = type;
+	r.fields["TIMEOUT"] = timeOut;
 	return r;
 }
 
 
-} // namespace Upnp
+void EventParser::operator()(std::string_view body, EventHandler& handler)
+{
+	std::stringstream bodyss;
+	bodyss << urlDecode(body);
+	//std::cout << "Upnp::EventParser decoded:\n" << bodyss.str() << "\n";
 
+	boost::property_tree::ptree pt;
+	boost::property_tree::read_xml(bodyss, pt);
+
+	if(auto events = pt.get_child_optional("e:propertyset.e:property.LastChange.Event"))
+	{
+		for(auto& event: *events)
+		{
+			parseEvents(event.first, event.second, handler);
+		}
+	}
+}
+
+
+void EventParser::parseEvents(const std::string& name, const boost::property_tree::ptree& pt, EventHandler& handler)
+{
+	if(name == "FriendlyName")
+	{
+		auto val = pt.get<std::string>("<xmlattr>.val");
+		handler.onDeviceName(val);
+	}
+	else if(name == "DevicePower")
+	{
+		auto val = pt.get<std::string>("<xmlattr>.val");
+		handler.onPower(val == "ON");
+	}
+	else if(name == "InstanceID")
+	{
+		for(auto& [key, val]: pt)
+		{
+			if(key == "Volume")
+			{
+				auto channel = val.get<std::string>("<xmlattr>.channel");
+				auto vval = val.get<double>("<xmlattr>.val");
+				if(channel == "Master")
+					handler.onVolume(Denon::Channel::Master, vval);
+				else
+					handler.onZoneVolume(channel, vval);
+			}
+			else if(key == "Bass")
+				handler.onVolume(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
+			else if(key == "Treble")
+				handler.onVolume(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
+			else if(key == "Subwoofer")
+				handler.onVolume(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
+			else if(key == "Mute")
+			{
+				auto channel = val.get<std::string>("<xmlattr>.channel");
+				auto mval = val.get<int>("<xmlattr>.val");
+				handler.onMute(channel, mval != 0);
+			}
+		}
+	}
+	else if(name == "WifiApSsid")
+	{
+		auto mval = pt.get<std::string>("<xmlattr>.val");
+		handler.wifiSsid(mval);
+	}
+	else if(name == "SurroundSpeakerConfig")
+	{
+		/*auto cfg = pt.get<std::string>("<xmlattr>.val");
+		std::stringstream ss;
+		ss << urlDecode(cfg);
+		std::cout << "* SurroundSpeakerConfig *\n" << ss.str() << "\n";*/
+	}
+}
+
+
+} // namespace Upnp
+} // namespace Denon
