@@ -11,6 +11,9 @@
 
 namespace Ssdp {
 
+constexpr int port = 60006;
+constexpr char path[] = "/upnp/desc/aios_device/aios_device.xml";
+
 /// Expand fname into an absolute path.
 /// $HOME/fname if it exists, otherwise /etc/fname
 std::string GetConfigurationPath(std::string fname, bool create);

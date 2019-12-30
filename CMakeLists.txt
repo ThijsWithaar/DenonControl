@@ -2,16 +2,8 @@ cmake_minimum_required(VERSION 3.10)
 
 project(Denon
 	VERSION 0.2
-	DESCRIPTION "Denon Audio/Video Receiver control"
+	DESCRIPTION "Denon Audio/Video-Receiver control"
 )
-
-set(CPACK_GENERATOR "DEB")
-set(CPACK_PACKAGE_VENDOR "Withaar")
-set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
-set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Thijs Withaar <thijs.withaar@gmail.com>")
-set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
-set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
 if(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" AND UNIX)
 	add_compile_options(-fdata-sections -ffunction-sections)
@@ -23,6 +15,8 @@ add_subdirectory(ssdpBridge)
 add_subdirectory(qtui)
 add_subdirectory(test)
 
+set(CPACK_PACKAGE_VENDOR "Withaar")
+set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
 if(UNIX)
 	execute_process(
 		COMMAND lsb_release -si
@@ -30,6 +24,12 @@ if(UNIX)
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
 	if(EXISTS /etc/debian_version)
+		set(CPACK_GENERATOR "DEB")
+		set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Thijs Withaar <thijs.withaar@gmail.com>")
+		set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
+		#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
+		set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+
 		execute_process(COMMAND dpkg --print-architecture
 			OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
 			OUTPUT_STRIP_TRAILING_WHITESPACE

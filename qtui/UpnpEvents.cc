@@ -35,7 +35,8 @@ const std::vector<QString> uris = {
 
 UpnpEvents::UpnpEvents(QObject* parent):
 	QObject(parent),
-	m_subTimer(this)
+	m_subTimer(this),
+	m_cbParser(Denon::Http::Method::MSearch)
 {
 	connect(&m_cbSocket, &QTcpServer::newConnection, this, &UpnpEvents::onCbConnection);
 	m_cbSocket.listen(QHostAddress::Any, listenPort);
@@ -110,14 +111,13 @@ void UpnpEvents::onCbRead()
 	QTcpSocket* socket = reinterpret_cast<QTcpSocket*>(sender());
 
 	auto dst = m_cbParser.currentBuffer();
-	auto nRead = socket->read(dst.first, dst.second);
+	size_t nRead = socket->read(dst.first, dst.second);
 	while(auto pPacket = m_cbParser.markRead(nRead))
 	{
-		nRead = 0;
 		Denon::Upnp::EventParser parser;
 		parser(pPacket->body, *this);
 
-		Denon::Http::BlockingConnection::Response resp;
+		Denon::Http::Response resp;
 		resp.status = 200;
 		resp.fields["CONNECTION"] = "close";
 		resp.fields["CONTENT-TYPE"] = "text/html";

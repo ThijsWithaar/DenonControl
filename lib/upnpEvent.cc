@@ -16,8 +16,8 @@ namespace Upnp {
 
 Subscribe::operator std::string()
 {
-	Http::BlockingConnection::Request r;
-	r.method = Http::BlockingConnection::Method::Subscribe;
+	Http::Request r;
+	r.method = Http::Method::Subscribe;
 	r.path = url;
 	r.fields["HOST"] = host;
 	r.fields["CALLBACK"] = callback;

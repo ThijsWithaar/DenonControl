@@ -9,12 +9,13 @@ namespace Denon {
 
 
 enum class Query {
-	AppCommand, DeviceInfo, NetAudioStatus
+	AppCommand, AppCommand300, DeviceInfo, NetAudioStatus
 };
 
 
 std::map<Query, std::string> g_QueryUrls = {
 	{Query::AppCommand, "/goform/AppCommand.xml"},
+	{Query::AppCommand300, "/goform/AppCommand0300.xml"},
 	{Query::DeviceInfo, "/goform/Deviceinfo.xml"},
 	{Query::NetAudioStatus, "/goform/formNetAudio_StatusXml.xml"},
 	// From wireshark capture of Denon android app:
@@ -44,10 +45,10 @@ AppInterface::AppInterface(std::unique_ptr<Http::BlockingConnection>&& con):
 }
 
 
-const Http::BlockingConnection::Response& AppInterface::Get(std::string path)
+const Http::Response& AppInterface::Get(std::string path)
 {
 	return m_http->Http({
-		Http::BlockingConnection::Method::Get,
+		Http::Method::Get,
 		path,
 		{},
 		""
@@ -55,10 +56,10 @@ const Http::BlockingConnection::Response& AppInterface::Get(std::string path)
 }
 
 
-const Http::BlockingConnection::Response& AppInterface::Post(std::string path, std::string body)
+const Http::Response& AppInterface::Post(std::string path, std::string body)
 {
 	return m_http->Http({
-		Http::BlockingConnection::Method::Post,
+		Http::Method::Post,
 		path,
 		{},
 		body
@@ -66,7 +67,7 @@ const Http::BlockingConnection::Response& AppInterface::Post(std::string path, s
 }
 
 
-boost::property_tree::ptree AppInterface::Parse(const Http::BlockingConnection::Response& r)
+boost::property_tree::ptree AppInterface::Parse(const Http::Response& r)
 {
 	std::stringstream ss;
 	ss << r.body;
@@ -185,7 +186,59 @@ DeviceStatus AppInterface::GetDeviceStatus()
 }
 
 
-const Http::BlockingConnection::Response& AppInterface::AppCommand(std::vector<std::string> attributes)
+
+/**
+POST /goform/AppCommand0300.xml HTTP/1.1
+Content-Type: text/xml; charset="utf-8"
+Content-Length: 152
+HOST: 192.168.4.7:8080
+User-Agent: CyberGarage-HTTP/1.1 DLNADOC/1.50
+
+<?xml version="1.0" encoding="utf-8"?>
+<tx>
+ <cmd id="3">
+  <name>SetSoundMode</name>
+  <list>
+   <param name="genre">4</param>
+  </list>
+ </cmd>
+</tx>
+*/
+void AppInterface::SetSoundMode(int mode)
+{
+	boost::property_tree::ptree param("param");
+	param.put("<xmlattr>.name", "genre");
+	param.put_value(mode);
+
+	boost::property_tree::ptree list("list");
+	list.put_child("param", param);
+
+	boost::property_tree::ptree name("name");
+	name.put_value("SetSoundMode");
+
+	boost::property_tree::ptree cmd("cmd");
+	cmd.put("<xmlattr>.id", 3);
+	cmd.put_child("name", name);
+	cmd.put_child("list", list);
+
+	AppCommand3({cmd});
+}
+
+
+const Http::Response& AppInterface::AppCommand3(std::vector<boost::property_tree::ptree> commands)
+{
+	boost::property_tree::ptree pt, tx;
+	for(auto& cmd: commands)
+		tx.put_child("cmd", cmd);
+	pt.put_child("tx", tx);
+
+	std::stringstream bodySend;
+	boost::property_tree::write_xml(bodySend, pt);
+	return Post(g_QueryUrls.at(Query::AppCommand300), bodySend.str());
+}
+
+
+const Http::Response& AppInterface::AppCommand(std::vector<std::string> attributes)
 {
 	auto url = g_QueryUrls.at(Query::AppCommand);
 	boost::property_tree::ptree pt, tx;

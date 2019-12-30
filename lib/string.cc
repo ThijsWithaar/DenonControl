@@ -49,7 +49,10 @@ std::pair<std::string_view, std::string_view> splitKeyVal(std::string_view line)
 	if(sep == std::string_view::npos)
 		return {};
 	auto key = line.substr(0, sep);
-	auto val = line.substr(sep+2);
+	sep++;
+	while(line[sep] == ' ')
+		sep++;
+	auto val = line.substr(sep);
 	return {key, val};
 }
 

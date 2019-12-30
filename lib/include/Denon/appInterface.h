@@ -66,17 +66,21 @@ public:
 
 	DeviceStatus GetDeviceStatus();
 
+	/// Movie, Pure, Music, Game
+	void SetSoundMode(int mode);
+
 	/// CommandConnection
 	void Send(const std::string&) override;
 
 private:
-	const Http::BlockingConnection::Response& Get(std::string path);
-	const Http::BlockingConnection::Response& Post(std::string path, std::string body);
+	const Http::Response& Get(std::string path);
+	const Http::Response& Post(std::string path, std::string body);
 
-	boost::property_tree::ptree Parse(const Http::BlockingConnection::Response&);
+	boost::property_tree::ptree Parse(const Http::Response&);
 
 	// Application Command
-	const Http::BlockingConnection::Response& AppCommand(std::vector<std::string> attributes);
+	const Http::Response& AppCommand(std::vector<std::string> attributes);
+	const Http::Response& AppCommand3(std::vector<boost::property_tree::ptree> commands);
 
 	std::unique_ptr<Http::BlockingConnection> m_http;
 };

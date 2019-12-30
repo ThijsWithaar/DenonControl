@@ -130,8 +130,8 @@ Search ParseSearch(std::string_view message)
 
 Search::operator std::string()
 {
-	Denon::Http::BlockingConnection::Request r;
-	r.method = Denon::Http::BlockingConnection::Method::MSearch;
+	Denon::Http::Request r;
+	r.method = Denon::Http::Method::MSearch;
 	r.path = "*";
 
 	r.fields["HOST"] = "239.255.255.250:1900";

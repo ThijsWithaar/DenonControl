@@ -13,6 +13,7 @@
 namespace Denon {
 namespace Upnp {
 
+
 /// Subscribe message
 struct Subscribe
 {
