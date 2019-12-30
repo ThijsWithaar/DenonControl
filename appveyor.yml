@@ -1,4 +1,5 @@
 image:
+ - Visual Studio 2019
  - ubuntu1804
 
 configuration:
@@ -7,22 +8,45 @@ configuration:
 platform:
  - x64
 
+environment:
+    VCPKG_DIR: C:\Tools\vcpkg
+    VCPKG_DEFAULT_TRIPLET: x64-windows
+    CMAKE_GENERATOR: Ninja
+    QT_DIR: C:\Qt\latest\msvc2017_64
+
+init:
+ - echo %APPVEYOR_BUILD_WORKER_IMAGE%
+ - echo %VCPKG_DIR%
+ - echo %VCPKG_DEFAULT_TRIPLET%
+ - echo %CMAKE_GENERATOR%
+ - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+ - cmd: echo.set(VCPKG_BUILD_TYPE %CONFIGURATION%)>> %VCPKG_DIR%\triplets\%PLATFORM%-windows.cmake
+ - cmd: type %VCPKG_DIR%\triplets\x64-windows.cmake
+ - cmd: set Path=%QT_DIR%\bin;%Path%
+
 install:
+ # Windows
+ - cmd: cd %VCPKG_DIR%
+ - cmd: vcpkg update
+ - cmd: vcpkg install catch2 boost-beast boost-program-options boost-property-tree boost-serialization boost-system
+ - cmd: vcpkg integrate install
+ - cmd: cd %APPVEYOR_BUILD_FOLDER%
+ # Linux
  - sh: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
  - sh: sudo add-apt-repository ppa:mhier/libboost-latest
  - sh: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
  - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
  - sh: sudo apt update -q
- - sh: sudo apt install -yq build-essential git cmake clang libboost1.70-dev
- #libboost-program-options-dev libboost-serialization-dev libboost-system-dev
+ - sh: sudo apt install -yq build-essential ninja-build git cmake clang libboost1.70-dev
  - sh: sudo apt install -yq qtbase5-dev qttools5-dev
- # Catch2 is not yet in a repo, so build+install ourselves
+ #      Catch2 is not yet in a repo, so build+install ourselves
  - sh: git clone https://github.com/catchorg/Catch2.git ~/catch2
  - sh: cmake -H~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
  - sh: sudo cmake --build ~/catch2.build -- install
 
 
 before_build:
+ - cmd: cmake -G "%CMAKE_GENERATOR%" -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH=%QT_DIR% -DCMAKE_BUILD_TYPE=MinSizeRel -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
  - sh: cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_BUILD_TYPE=MinSizeRel -H${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
 
 build_script:
@@ -33,7 +57,10 @@ test_script:
 
 artifacts:
  - path: build/*.deb
-   name: installer
+   name: Linux installer
+
+ - path: build/*.exe
+   name: Windows installer
 
 deploy:
   tag: $(APPVEYOR_REPO_TAG_NAME)

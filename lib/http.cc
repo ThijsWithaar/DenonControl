@@ -99,7 +99,7 @@ void ParseHeader(Http::Response& dst, std::string_view data)
 			}
 			else
 			{
-				std::from_chars(els[1].begin(), els[1].end(), dst.status);
+				std::from_chars(els[1].data(), els[1].data() + els[1].size(), dst.status);
 			}
 			firstLine = false;
 			return;
@@ -147,7 +147,7 @@ const Http::Response* Parser::markRead(size_t& nRead)
 		return nullptr;		// This parser requires content-length
 
 	auto dBegin = hEnd + 4;
-	size_t clen = std::stod(clens);
+	size_t clen = std::stoi(clens);
 	size_t dlen = std::distance(dBegin, bufEnd);
 	if(dlen < clen)
 		return nullptr;		// Data not yet complete
@@ -208,9 +208,6 @@ const Response& BeastConnection::Http(const Request& req)
 
 	http::response<http::dynamic_body> res;
 	auto nRead = http::read(m_socket, m_buffer, res);
-	//std::cout << "BeastConnection: read " << nRead << "\n";
-	//std::string b((const char*)m_buffer.data().data(), m_buffer.data().size());
-	//std::cout << "'" << b << "'";
 
 	auto bdata = res.body().data();
 	m_response.status = res.result_int();

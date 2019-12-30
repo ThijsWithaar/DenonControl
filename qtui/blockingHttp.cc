@@ -19,13 +19,10 @@ const Denon::Http::Response& QHttpConnection::Http(const Denon::Http::Request& r
 	m_socket.connectToHost(m_host, m_port);
 	m_socket.waitForConnected(3000);
 
-	auto localIp = m_socket.localAddress().toString();
 	auto reqc = req;
-	//reqc.fields["HOST"] = localIp.toStdString() + ":" + std::to_string(m_port);
 	reqc.fields["HOST"] = m_host.toString().toStdString() + ":" + std::to_string(m_port);
 
 	std::string msg = reqc;
-	//std::cout << msg << "\n";
 	m_socket.write(msg.data(), msg.size());
 	if(!m_socket.waitForBytesWritten())
 		std::cout << "QHttpConnection: Could not write\n";
@@ -37,10 +34,9 @@ const Denon::Http::Response& QHttpConnection::Http(const Denon::Http::Request& r
 		size_t nRead = m_socket.read(buf.first, buf.second);
 		if(nRead == std::numeric_limits<size_t>::max())
 		{
-			std::cout << "QHttpConnection: Error: " << m_socket.errorString().toStdString() << "\n";
+			std::cout << "QHttpConnection: Read Error: " << m_socket.errorString().toStdString() << "\n";
 			break;
 		}
-		//std::cout << "QHttpConnection: Read " << nRead << " bytes\n";
 
 		if(auto pPacket = m_parser.markRead(nRead))
 		{

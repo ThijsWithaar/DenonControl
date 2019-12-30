@@ -5,6 +5,9 @@ project(Denon
 	DESCRIPTION "Denon Audio/Video-Receiver control"
 )
 
+# Allow grouping of projects in visual studio
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 if(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" AND UNIX)
 	add_compile_options(-fdata-sections -ffunction-sections)
 	add_link_options(-Wl,--gc-sections -Wl,--strip-all)
@@ -13,10 +16,13 @@ endif()
 add_subdirectory(lib)
 add_subdirectory(ssdpBridge)
 add_subdirectory(qtui)
+
+enable_testing()
 add_subdirectory(test)
 
 set(CPACK_PACKAGE_VENDOR "Withaar")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
+set(CPACK_PACKAGE_EXECUTABLE "denonUi;Denon")
 if(UNIX)
 	execute_process(
 		COMMAND lsb_release -si

@@ -60,6 +60,7 @@ void EventParser::parseEvents(const std::string& name, const boost::property_tre
 	}
 	else if(name == "InstanceID")
 	{
+		// See also: RenderingControl::GetCurrentState
 		for(auto& [key, val]: pt)
 		{
 			if(key == "Volume")

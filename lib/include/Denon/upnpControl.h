@@ -10,6 +10,7 @@
 namespace Denon {
 namespace Upnp {
 
+
 /// Define a SOAP request, as HTPP request
 class SoapRequest
 {

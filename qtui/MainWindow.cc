@@ -328,7 +328,7 @@ void MainWindow::onResponse()
 	std::string_view msg(m_telnetRxBuf.data(), nRead);
 
 	std::cout << "Denon: " << msg << "\n";
-	statusBar()->showMessage(QString::fromLocal8Bit(msg.data(), msg.size()));
+	statusBar()->showMessage(QString::fromLocal8Bit(msg.data(), (int)msg.size()));
 	Denon::ParseResponse(msg, *this);
 }
 

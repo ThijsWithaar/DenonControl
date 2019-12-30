@@ -81,6 +81,21 @@ std::vector<Interface> GetNetworkInterfaces()
 
 	return ret;
 }
+
+#else
+
+
+std::string GetConfigurationPath(std::string fname, bool create)
+{
+	return {};
+}
+
+
+std::vector<Interface> GetNetworkInterfaces()
+{
+	return {};
+}
+
 #endif
 
 

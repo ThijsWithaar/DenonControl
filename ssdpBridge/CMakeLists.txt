@@ -30,6 +30,8 @@ endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION bin)
 
-# Directory with systemd unit files
-set (SYSTEMD_UNIT_DIR "/lib/systemd/system/")
-install(FILES ssdpBridge.service DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT bin)
+if(UNIX)
+	# Directory with systemd unit files
+	set (SYSTEMD_UNIT_DIR "/lib/systemd/system/")
+	install(FILES ssdpBridge.service DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT bin)
+endif()
