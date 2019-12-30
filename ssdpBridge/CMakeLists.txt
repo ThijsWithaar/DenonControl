@@ -28,10 +28,10 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_link_libraries(${PROJECT_NAME} stdc++fs)
 endif()
 
-install(TARGETS ${PROJECT_NAME} DESTINATION bin)
+install(TARGETS ${PROJECT_NAME} DESTINATION bin COMPONENT server)
 
 if(UNIX)
 	# Directory with systemd unit files
 	set (SYSTEMD_UNIT_DIR "/lib/systemd/system/")
-	install(FILES ssdpBridge.service DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT bin)
+	install(FILES ssdpBridge.service DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT server)
 endif()

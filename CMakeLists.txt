@@ -37,6 +37,7 @@ if(UNIX)
 		set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 		#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
 		set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+		set(CPACK_DEB_COMPONENT_INSTALL ON)
 
 		execute_process(COMMAND dpkg --print-architecture
 			OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -49,8 +50,8 @@ if(UNIX)
 	# https://stackoverflow.com/questions/14235798/specify-an-icon-and-menu-entry-for-cmake-cpack-application
 	set(DESKTOP_DIR "/usr/share/applications")
 	set(PIXMAPS_DIR "/usr/share/icons")
-	install(FILES qtui/denon.desktop DESTINATION ${DESKTOP_DIR})
-	install(FILES qtui/denon.png DESTINATION ${PIXMAPS_DIR})
+	install(FILES qtui/denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
+	install(FILES qtui/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
 
 	#find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
 	#install(CODE "execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${DESKTOP_DIR}/denon.desktop)")
@@ -62,5 +63,7 @@ if(UNIX)
 	)
 endif()
 
-
 include(CPack)
+cpack_add_component(gui DISPLAY_NAME "Graphical User Interface")
+cpack_add_component(dev DISPLAY_NAME "Development" DISABLED)
+cpack_add_component(server DISPLAY_NAME "Server tools" DISABLED)

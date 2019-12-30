@@ -26,8 +26,8 @@ boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp,
 {
 	auto pt = ParseXml(resp.body);
 	auto acr = pt.get<std::string>("s:Envelope.s:Body." + param);
-	auto ud = urlDecode(acr);
-	std::cout << ud << "\n";
+	auto ud = xmlDecode(acr);
+	//std::cout << ud << "\n";
 	return ParseXml(ud);
 }
 
@@ -72,6 +72,21 @@ SoapRequest::operator Denon::Http::Request()
 //-- Rendering Control --
 
 
+std::ostream& operator<<(std::ostream& os, RenderingControl::Channel c)
+{
+	using Channel = RenderingControl::Channel;
+	switch(c)
+	{
+	case Channel::Master: os << "Master"; break;
+	case Channel::Zone1: os << "Zone1"; break;
+	case Channel::Zone2: os << "Zone2"; break;
+	case Channel::Zone3: os << "Zone3"; break;
+	case Channel::Zone4: os << "Zone4"; break;
+	}
+	return os;
+}
+
+
 RenderingControl::RenderingControl(Denon::Http::BlockingConnection* con):
 	m_con(con)
 {
@@ -80,35 +95,6 @@ RenderingControl::RenderingControl(Denon::Http::BlockingConnection* con):
 }
 
 
-/**
- <Event xmlns="urn:schemas-upnp-org:metadata-1-0/RCS/">
-  <InstanceID val="0">
-    <Mute channel="Master" val="0"/>
-    <Mute channel="Zone1" val="0"/>
-    <Mute channel="Zone2" val="0"/>
-    <Mute channel="Zone3" val="0"/>
-    <Mute channel="Zone4" val="0"/>
-    <PresetNameList val="FactoryDefaults,InstallationDefaults,Disabled,Accoustic,Classical,Jazz,Pop,Rock"/>
-    <Volume channel="Master" val="44"/>
-    <VolumeDB channel="Master" val="44"/>
-    <Volume channel="Zone1" val="21"/>
-    <VolumeDB channel="Zone1" val="21"/>
-    <Volume channel="Zone2" val="44"/>
-    <VolumeDB channel="Zone2" val="44"/>
-    <Volume channel="Zone3" val="0"/>
-    <VolumeDB channel="Zone3" val="0"/>
-    <Volume channel="Zone4" val="0"/>
-    <VolumeDB channel="Zone4" val="0"/>
-    <SetVolumeId channel="Master" val=""/>
-    <SetMuteId channel="Master" val=""/>
-    <Preset val="InstallationDefaults"/>
-    <Bass val="5"/>
-    <Treble val="5"/>
-    <Subwoofer val="15"/>
-    <Balance val="50"/>
-  </InstanceID>
-</Event>
-*/
 RenderingControl::CurrentState RenderingControl::GetCurrentState()
 {
 	m_request.actionName = "GetCurrentState";
@@ -141,6 +127,10 @@ RenderingControl::CurrentState RenderingControl::GetCurrentState()
 			cs.treble = it.second.get<int>("<xmlattr>.val");
 		else if(it.first == "Subwoofer")
 			cs.subwoofer = it.second.get<int>("<xmlattr>.val");
+		else if(it.first == "Balance")
+			cs.balance = it.second.get<int>("<xmlattr>.val");
+		else if(it.first == "Preset")
+			cs.preset = it.second.get<std::string>("<xmlattr>.val");
 	}
 
 	return cs;
@@ -152,10 +142,22 @@ std::string RenderingControl::GetMute(Channel channel)
 	m_request.actionName = "GetMute";
 	m_request.parameters = {
 		{"InstanceID", "0"},
-		{"Channel", "Master"},
+		{"Channel", toString(channel)},
 	};
 	auto& resp = m_con->Http(m_request);
 	return resp.body;
+}
+
+
+void RenderingControl::SetVolume(int instance, Channel channel, double volume)
+{
+	m_request.actionName = "GetMute";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instance)},
+		{"Channel", toString(channel)},
+		{"DesiredVolume", std::to_string(volume)}
+	};
+	m_con->Http(m_request);
 }
 
 
@@ -170,14 +172,37 @@ DenonAct::DenonAct(Denon::Http::BlockingConnection* con):
 }
 
 
-DenonAct::AudioConfig DenonAct::GetAudioConfig()
+std::vector<DenonAct::ApInfo> DenonAct::GetAccessPointList()
 {
-	m_request.actionName = "GetAudioConfig";
+	m_request.actionName = "GetAccessPointList";
 	auto& resp = m_con->Http(m_request);
-	auto pt = DecodeXmlResponse(resp, "u:GetAudioConfigResponse.AudioConfig");
-	auto act = pt.get_child("AudioConfig");
+	auto pt = DecodeXmlResponse(resp, "u:GetAccessPointListResponse.accessPointList");
+	auto& ailist = pt.get_child("APInfoList");
 
-	AudioConfig ac;
+	std::vector<ApInfo> r;
+	for(auto& [key, ai]: ailist)
+	{
+		ApInfo i;
+		i.ssid = ai.get<std::string>("SSID");
+		i.protocol = ai.get<std::string>("Protocol");
+		i.channel = ai.get<int>("Channel");
+		i.signal = ai.get<int>("Signal");
+		i.quality = ai.get<int>("Quality");
+		i.security = ai.get<std::string>("SecurityMode");
+		i.wps = ai.get<std::string>("WPS") != "NO";
+
+		r.push_back(i);
+	}
+
+	return r;
+}
+
+
+DenonAct::AudioConfig ParseAudioConfig(const boost::property_tree::ptree& pt)
+{
+	auto& act = pt.get_child("AudioConfig");
+
+	DenonAct::AudioConfig ac;
 	ac.highpass = act.get<int>("highpass");
 	ac.lowpass = act.get<int>("lowpass");
 	ac.subwooferEnable = act.get<int>("subwooferEnable") != 0;
@@ -189,52 +214,89 @@ DenonAct::AudioConfig DenonAct::GetAudioConfig()
 		ac.availableSoundModes.push_back(std::string(avsm));
 	ac.sourceDirect = act.get<int>("sourceDirect") != 0;
 	ac.bassBoost = act.get<int>("bassBoost");
+
 	return ac;
 }
 
 
-/**
-<?xml version="1.0"?>
-	<AvrZoneStatus>
-	<Zones>
-		<Zone1>
-		<Name>MAIN ZONE</Name>
-		<Active>0</Active>
-		<Grouped>0</Grouped>
-		<Enabled>1</Enabled>
-		</Zone1>
-		<Zone2>
-		<Name>ZONE2</Name>
-		<Active>0</Active>
-		<Grouped>0</Grouped>
-		<Enabled>1</Enabled>
-		<AvailableInputs>TUNER,PHONO</AvailableInputs>
-		</Zone2>
-	</Zones>
-	<Minimised>0</Minimised>
-	<GroupName/>
-	</AvrZoneStatus>
-*/
+DenonAct::BluetoothConfig ParseBtConfig(const boost::property_tree::ptree& pt)
+{
+	auto btc = pt.get_child("BluetoothStatus");
+
+	DenonAct::BluetoothConfig ret;
+	ret.connectedStatus = btc.get<std::string>("connectedStatus");
+	ret.connectionType = btc.get<std::string>("connectionType");
+	ret.hasPairedDevices = btc.get<int>("hasPairedDevices") != 0;
+	return ret;
+}
+
+
+DenonAct::AudioConfig DenonAct::GetAudioConfig()
+{
+	m_request.actionName = "GetAudioConfig";
+	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetAudioConfigResponse.AudioConfig");
+	return ParseAudioConfig(pt);
+}
+
+
+DenonAct::ZoneStatus ParseZoneStatus(const boost::property_tree::ptree& pt)
+{
+	auto azs = pt.get_child("AvrZoneStatus");
+
+	DenonAct::ZoneStatus zs;
+	for(auto zone: azs.get_child("Zones"))
+	{
+		DenonAct::Zone zn;
+		zn.name = zone.second.get<std::string>("Name");
+		zn.active = zone.second.get<int>("Active") != 0;
+		zn.grouped = zone.second.get<int>("Grouped") != 0;
+		zn.enabled = zone.second.get<int>("Enabled") != 0;
+		if(auto ai = zone.second.get_optional<std::string>("AvailableInputs"))
+			for(auto in: split(*ai, ","))
+				zn.availableInputs.push_back(std::string(in));
+		zs.zones.push_back(zn);
+	}
+	zs.minimised = azs.get<int>("Minimised") != 0;
+	return zs;
+}
+
+
+std::vector<DenonAct::NetworkConfiguration> ParseNetworkConfigs(const boost::property_tree::ptree& pt)
+{
+	std::vector<DenonAct::NetworkConfiguration> r;
+	for(auto& [key, ncfg]: pt.get_child("listNetworkConfigurations"))
+	{
+		DenonAct::NetworkConfiguration rs;
+		rs.id = ncfg.get<int>("<xmlattr>.id") != 0;
+		rs.dhcpOn = ncfg.get<int>("<xmlattr>.dhcpOn") != 0;
+		rs.name = ncfg.get<std::string>("Name");
+		rs.ip = ncfg.get<std::string>("IP");
+		rs.netmask = ncfg.get<std::string>("Netmask");
+		rs.gateway = ncfg.get<std::string>("Gateway");
+		rs.gwMac = ncfg.get<std::string>("gwMac");
+
+		if(auto wp = ncfg.get_child_optional("wirelessProfile"))
+		{
+			auto ssid = wp->get<std::string>("<xmlattr>.SSID");
+			if(auto pass = wp->get_optional<std::string>("MODE.<xmlattr>.passPhrase"))
+			{
+			}
+		}
+
+		r.push_back(rs);
+	}
+
+	return r;
+}
+
+
 DenonAct::ZoneStatus DenonAct::GetAvrZoneStatus()
 {
 	m_request.actionName = "GetAvrZoneStatus";
 	auto& resp = m_con->Http(m_request);
 	auto pt = DecodeXmlResponse(resp, "u:GetAvrZoneStatusResponse.status");
-	auto azs = pt.get_child("AvrZoneStatus");
-
-	ZoneStatus zs;
-	for(auto zone: azs.get_child("Zones"))
-	{
-		Zone zn;
-		zn.name = zone.second.get<std::string>("Name");
-		zn.active = zone.second.get<int>("Active") != 0;
-		zn.grouped = zone.second.get<int>("Grouped") != 0;
-		zn.enabled = zone.second.get<int>("Enabled") != 0;
-
-		zs.zones.push_back(zn);
-	}
-
-	return zs;
+	return ParseZoneStatus(pt);
 };
 
 
@@ -248,14 +310,11 @@ DenonAct::Speaker ParseSpeaker(boost::property_tree::ptree& pt)
 }
 
 
-DenonAct::SpeakerConfig DenonAct::GetSurroundSpeakerConfig()
+DenonAct::SpeakerConfig ParseSpeakerConfig(const boost::property_tree::ptree& pt)
 {
-	m_request.actionName = "GetSurroundSpeakerConfig";
-	auto& resp = m_con->Http(m_request);
-	auto pt = DecodeXmlResponse(resp, "u:GetSurroundSpeakerConfigResponse.SurroundSpeakerConfig");
 	auto ssc = pt.get_child("SurroundSpeakerConfig");
 
-	SpeakerConfig ret;
+	DenonAct::SpeakerConfig ret;
 	ret.front.enabled = ssc.get<int>("Front.enabled") != 0;
 	ret.front.left = ParseSpeaker(ssc.get_child("Front.Left"));
 	ret.front.right = ParseSpeaker(ssc.get_child("Front.Right"));
@@ -273,6 +332,79 @@ DenonAct::SpeakerConfig DenonAct::GetSurroundSpeakerConfig()
 	ret.distanceUnit = ssc.get<std::string>("DistUnit");
 
 	return ret;
+}
+
+
+DenonAct::SpeakerConfig DenonAct::GetSurroundSpeakerConfig()
+{
+	m_request.actionName = "GetSurroundSpeakerConfig";
+	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetSurroundSpeakerConfigResponse.SurroundSpeakerConfig");
+
+	return ParseSpeakerConfig(pt);
+}
+
+
+DenonAct::CurrentState DenonAct::GetCurrentState()
+{
+	m_request.actionName = "GetCurrentState";
+	auto& resp = m_con->Http(m_request);
+	auto cs = ParseXml(resp.body).get<std::string>("s:Envelope.s:Body.u:GetCurrentStateResponse.CurrentState");
+	auto ev = ParseXml(cs).get_child("Event");
+
+	CurrentState r;
+	r.friendlyName = ev.get<std::string>("FriendlyName");
+	r.heosNetId = ev.get<std::string>("HEOSNetId");
+
+	auto ac = ev.get<std::string>("AudioConfig.<xmlattr>.val");
+	r.audioConfig = ParseAudioConfig(ParseXml(ac));
+
+	auto btc = ev.get<std::string>("BTConfig.<xmlattr>.val");
+	r.btConfig = ParseBtConfig(ParseXml(btc));
+
+	r.languageLocale = ev.get<std::string>("CurrentLanguageLocale");
+
+	auto ncfgs = ev.get<std::string>("NetworkConfigurationList.<xmlattr>.val");
+	r.networkConfigurations = ParseNetworkConfigs(ParseXml(ncfgs));
+
+	auto spc = ev.get<std::string>("SurroundSpeakerConfig.<xmlattr>.val");
+	r.speakerConfig = ParseSpeakerConfig(ParseXml(spc));
+
+	r.wifiApSsid = ev.get<std::string>("WifiApSsid");
+	r.wirelessState = ev.get<std::string>("WirelessState");
+
+	auto zs = ev.get<std::string>("AvrZoneStatus.<xmlattr>.val");
+	r.zoneStatus = ParseZoneStatus(ParseXml(zs));
+
+	return r;
+}
+
+
+std::ostream& operator<<(std::ostream& os, DenonAct::BluetoothAction action)
+{
+	using BluetoothAction = DenonAct::BluetoothAction;
+	switch(action)
+	{
+		case BluetoothAction::NONE: os << "NONE"; break;
+		case BluetoothAction::START_PAIRING: os << "START_PAIRING"; break;
+		case BluetoothAction::CANCEL_PAIRING: os << "CANCEL_PAIRING"; break;
+		case BluetoothAction::CONNECT: os << "CONNECT"; break;
+		case BluetoothAction::DISCONNECT: os << "DISCONNECT"; break;
+		case BluetoothAction::CLEAR_PAIRED_LIST: os << "CLEAR_PAIRED_LIST"; break;
+	}
+	return os;
+}
+
+
+void DenonAct::SetBluetoothAction(int index, BluetoothAction action)
+{
+	m_request.actionName = "SetBluetoothAction";
+	m_request.parameters = {
+		{"BTAction", toString(action)},
+		{"BTIndex", std::to_string(index)},
+	};
+	auto& resp = m_con->Http(m_request);
+	//return resp.body;
 }
 
 

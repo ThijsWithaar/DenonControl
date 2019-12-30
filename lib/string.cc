@@ -57,7 +57,7 @@ std::pair<std::string_view, std::string_view> splitKeyVal(std::string_view line)
 }
 
 
-std::string urlDecode(std::string_view data)
+std::string xmlDecode(std::string_view data)
 {
 	using pair = std::pair<std::string, char>;
 	const std::vector<pair> pairs = {

@@ -10,14 +10,6 @@
 namespace Denon {
 
 
-template<typename T>
-std::string toString(T v)
-{
-	std::stringstream ss;
-	ss << v;
-	return ss.str();
-};
-
 
 const std::map<std::string, Source> gSources = {
 	{"TUNER", Source::TUNER},

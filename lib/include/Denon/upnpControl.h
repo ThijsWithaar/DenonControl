@@ -42,6 +42,7 @@ public:
 	{
 		std::map<std::string, ChannelState> channels;
 		double bass, treble, subwoofer, balance;
+		std::string preset;
 	};
 
 	RenderingControl(Denon::Http::BlockingConnection* con);
@@ -49,6 +50,8 @@ public:
 	CurrentState GetCurrentState();
 
 	std::string GetMute(Channel channel);
+
+	void SetVolume(int instance, Channel channel, double volume);
 
 private:
 	Denon::Http::BlockingConnection* m_con;
@@ -59,6 +62,13 @@ private:
 class DenonAct
 {
 public:
+	struct ApInfo
+	{
+		std::string ssid, protocol, security;
+		int channel, signal, quality;
+		bool wps;
+	};
+
 	struct AudioConfig
 	{
 		int highpass, lowpass;
@@ -71,17 +81,38 @@ public:
 		int bassBoost;
 	};
 
+	struct BluetoothConfig
+	{
+		std::string connectedStatus;
+		bool hasPairedDevices;
+		std::string connectionType;
+	};
+
+	enum class BluetoothAction
+	{
+		NONE,START_PAIRING,CANCEL_PAIRING,CONNECT,DISCONNECT,CLEAR_PAIRED_LIST
+	};
+
+	struct NetworkConfiguration
+	{
+		int id;
+		bool dhcpOn;
+		std::string name, type, ip, netmask, gateway, gwMac;
+	};
+
 	struct Zone
 	{
 		std::string name;
 		bool active;
 		bool grouped;
 		bool enabled;
+		std::vector<std::string> availableInputs;
 	};
 
 	struct ZoneStatus
 	{
 		std::vector<Zone> zones;
+		bool minimised;
 	};
 
 	struct Speaker
@@ -113,13 +144,32 @@ public:
 		std::string distanceUnit;
 	};
 
+	struct CurrentState
+	{
+		std::string friendlyName, heosNetId;
+		AudioConfig audioConfig;
+		BluetoothConfig btConfig;
+		std::string languageLocale;
+		std::vector<NetworkConfiguration> networkConfigurations;
+		SpeakerConfig speakerConfig;
+		std::string wifiApSsid;
+		std::string wirelessState;
+		ZoneStatus zoneStatus;
+	};
+
 	DenonAct(Denon::Http::BlockingConnection* con);
+
+	std::vector<ApInfo> GetAccessPointList();
 
 	AudioConfig GetAudioConfig();
 
 	ZoneStatus GetAvrZoneStatus();
 
 	SpeakerConfig GetSurroundSpeakerConfig();
+
+	CurrentState GetCurrentState();
+
+	void SetBluetoothAction(int index, BluetoothAction action);
 
 private:
 	Denon::Http::BlockingConnection* m_con;

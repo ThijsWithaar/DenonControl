@@ -26,5 +26,5 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
 	target_link_libraries(${PROJECT_NAME} stdc++fs)
 endif()
 
-install(TARGETS ${PROJECT_NAME} DESTINATION lib)
+install(TARGETS ${PROJECT_NAME} DESTINATION lib COMPONENT dev)
 install(FILES ${HDR} DESTINATION include/Denon COMPONENT dev)

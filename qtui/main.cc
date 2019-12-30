@@ -53,10 +53,12 @@ int main(int argc, char* argv[])
 	Denon::Upnp::DenonAct act(&hcon2);
 	//auto ac = act.GetAudioConfig(); std::cout << ac.soundMode << "\n";
 	//auto azs = act.GetAvrZoneStatus(); std::cout << azs.zones.front().name << "\n";
-	act.GetSurroundSpeakerConfig();
+	//act.GetSurroundSpeakerConfig();
+	//act.GetAccessPointList();
+	//act.GetCurrentState();
 
 	Denon::Upnp::RenderingControl rc(&hcon2);
-	//std::cout << rc.GetCurrentState().subwoofer << "\n";
+	std::cout << rc.GetCurrentState().subwoofer << "\n";
 	//auto mt = rc.GetMute(RenderingControl::Channel::Master); std::cout << "\n= GetMute\n'" << mt << "'\n";
 
 #elif 1

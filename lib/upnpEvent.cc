@@ -30,7 +30,7 @@ Subscribe::operator std::string()
 void EventParser::operator()(std::string_view body, EventHandler& handler)
 {
 	std::stringstream bodyss;
-	bodyss << urlDecode(body);
+	bodyss << xmlDecode(body);
 	//std::cout << "Upnp::EventParser decoded:\n" << bodyss.str() << "\n";
 
 	boost::property_tree::ptree pt;

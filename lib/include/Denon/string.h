@@ -1,7 +1,17 @@
 #pragma once
 
 #include <functional>
+#include <sstream>
 #include <string_view>
+
+
+template<typename T>
+std::string toString(T v)
+{
+	std::stringstream ss;
+	ss << v;
+	return ss.str();
+};
 
 bool startswith(std::string_view data, std::string_view key);
 
@@ -11,4 +21,4 @@ void splitlines(std::string_view data, std::function<void(std::string_view)> cb)
 
 std::pair<std::string_view, std::string_view> splitKeyVal(std::string_view line);
 
-std::string urlDecode(std::string_view data);
+std::string xmlDecode(std::string_view data);
