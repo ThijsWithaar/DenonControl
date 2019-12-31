@@ -23,6 +23,8 @@ add_subdirectory(test)
 set(CPACK_PACKAGE_VENDOR "Withaar")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
 set(CPACK_PACKAGE_EXECUTABLE "denonUi;Denon")
+set(CPACK_NSIS_MENU_LINKS "bin/denonUi.exe" "Denon")
+
 if(UNIX)
 	execute_process(
 		COMMAND lsb_release -si

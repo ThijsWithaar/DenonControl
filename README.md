@@ -6,7 +6,7 @@
 
 A Library and UI for controlling [Denon Receivers](https://www.denon.com).
 
-![Application Screenshot, from KDE desktop](doc/Screenshot_KDE.png)
+![Application Screenshot, from KDE desktop](doc/Screenshot_KDE.png) (doc/screenshot-windows.png)
 
 
 # Components
