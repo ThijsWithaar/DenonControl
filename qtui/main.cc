@@ -31,35 +31,6 @@ int main(int argc, char* argv[])
 	auto ds = denon.GetDeviceStatus();
 	std::cout << ds.surround << std::endl;
 	return 4;
-#elif 0
-	//-- Test SCDP --
-	#if 0
-		QHttpConnection hcon("192.168.4.7", Ssdp::port);
-		auto resp = hcon.Http({Denon::Http::Method::Get, Ssdp::path});
-		Denon::SCDP scdp(resp.body);
-
-		for(auto dev: scdp.devices)
-		{
-			std::cout << "Device " << dev.type << "\n";
-			for(auto ser: dev.services)
-				std::cout << "\tService " << ser.eventUrl << "\n";
-		}
-	#endif
-
-	boost::asio::io_context ioc;
-	//Denon::Http::BeastConnection hcon2(ioc, "192.168.4.7", Ssdp::port);
-	QHttpConnection hcon2("192.168.4.7", Ssdp::port);
-
-	Denon::Upnp::DenonAct act(&hcon2);
-	//auto ac = act.GetAudioConfig(); std::cout << ac.soundMode << "\n";
-	//auto azs = act.GetAvrZoneStatus(); std::cout << azs.zones.front().name << "\n";
-	//act.GetSurroundSpeakerConfig();
-	//act.GetAccessPointList();
-	//act.GetCurrentState();
-
-	Denon::Upnp::RenderingControl rc(&hcon2);
-	std::cout << rc.GetCurrentState().subwoofer << "\n";
-	//auto mt = rc.GetMute(RenderingControl::Channel::Master); std::cout << "\n= GetMute\n'" << mt << "'\n";
 
 #elif 1
 	QApplication app(argc, argv);

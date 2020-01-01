@@ -31,17 +31,30 @@ struct Search
 	std::map<std::string, std::string> custom;
 
 	operator std::string();
+	bool operator==(const Search& o) const;
 };
 
 /// SSDP Search response
-struct Notify
+struct Response
 {
 	std::string location;	/// url of where the service is
 	std::string nt;			/// urn being notified
 	std::map<std::string, std::string> custom;
+
+	operator std::string();
+	bool operator==(const Response& o) const;
 };
 
-std::variant<Search, Notify> Parse(std::string_view message);
+/// SSDP Notify (broadcast, not requested)
+struct Notify: public Response
+{
+	Notify() = default;
+	explicit Notify(const Response& r);
+	operator std::string();
+	bool operator==(const Notify& o) const;
+};
+
+std::variant<Search, Response, Notify> Parse(std::string_view message);
 
 /// Returns a list of network interfaces
 std::vector<Interface> GetNetworkInterfaces();
@@ -50,7 +63,44 @@ std::vector<Interface> GetNetworkInterfaces();
 class Connection
 {
 public:
-	using rx_callback_t = std::function<void(std::string_view)>;
+	using rx_callback_t = std::function<void(boost::asio::ip::address_v4, std::string_view)>;
+
+	/// Shared between listen- and broadcast-connection
+	class Base
+	{
+	public:
+		Base(boost::asio::io_context& context, const boost::asio::ip::address_v4& itf, rx_callback_t onRx);
+
+	protected:
+		void send(boost::asio::ip::udp::endpoint dst, const std::string_view& data);
+
+		void ScheduleRx();
+		boost::asio::ip::udp::socket m_socket;
+
+	private:
+		boost::asio::ip::address_v4 m_itf;
+		rx_callback_t m_cb;
+		boost::asio::ip::udp::endpoint m_sender_endpoint;
+		std::array<char, 1<<10> m_rxBuf, m_txBuf;
+	};
+
+	/// Listen to UDP on a interface:port, to receive broadcast replies
+	class Listen: public Base
+	{
+	public:
+		Listen(boost::asio::io_context& context, const boost::asio::ip::address_v4& itf, rx_callback_t onRx);
+
+		void send(const boost::asio::ip::address_v4& dst, const std::string_view& data);
+	};
+
+	/// Multicast connection, to send/receive multicast messages
+	class MultiCast: public Base
+	{
+	public:
+		MultiCast(boost::asio::io_context& context, const boost::asio::ip::address_v4& itf, rx_callback_t onRx);
+
+		void broadcast(const std::string_view& data);
+	};
 
 	Connection(
 		boost::asio::io_context& io_context,
@@ -58,21 +108,15 @@ public:
 		rx_callback_t onReceive
 	);
 
-	/// Send data over this interface
-	void send(const std::string_view& data);
+	/// Broadcast on the multicast address:port
+	void broadcast(const std::string_view& data);
+
+	/// Send to a specific client
+	void send(const boost::asio::ip::address_v4& dst, const std::string_view& data);
 
 private:
-	void schedule_receive();
-	void handle_receive_from(const boost::system::error_code& error, size_t bytes_recvd);
-	void handle_send_to(const boost::system::error_code& error);
-
-	boost::asio::ip::udp::socket m_socket;
-	boost::asio::ip::udp::endpoint m_listen_endpoint;	///< Our own endpoint
-	boost::asio::ip::udp::endpoint m_sender_endpoint;	///< endpoint of other party
-	boost::asio::ip::address_v4 m_itf_address;
-	std::array<char, 1<<10> m_data;
-	std::vector<char> m_sendData;
-	rx_callback_t m_Callback;
+	MultiCast m_multicast;
+	Listen m_listen;
 };
 
 class ServiceCache
@@ -92,7 +136,7 @@ public:
 class Client
 {
 public:
-	using callback_t = std::function<void(Notify)>;
+	using callback_t = std::function<void(const boost::asio::ip::address_v4, Notify)>;
 
 	Client(
 		boost::asio::io_context& io_context,
@@ -103,7 +147,7 @@ public:
 	void Search(std::string urn);
 
 private:
-	void OnReceive(std::string_view msg);
+	void OnReceive(boost::asio::ip::address_v4 sender, std::string_view msg);
 
 	ServiceCache m_cache;
 	Connection m_connection;
@@ -122,8 +166,8 @@ public:
 	Bridge(boost::asio::io_context& io_context, Settings settings);
 
 private:
-	void OnReceiveFromClient(const std::string_view& data);
-	void OnReceiveFromServer(const std::string_view& data);
+	void OnReceiveFromClient(boost::asio::ip::address_v4 sender, const std::string_view& data);
+	void OnReceiveFromServer(boost::asio::ip::address_v4 sender, const std::string_view& data);
 
 	Connection m_Client, m_Server;
 	ServiceCache m_cache;

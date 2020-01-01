@@ -1,8 +1,33 @@
 #include "blockingHttp.h"
 
+//#define DUMP_DATA
+
 #include <iostream>
 
 #include <QHostAddress>
+
+
+#ifdef DUMP_DATA
+#include <fstream>
+
+class fdump
+{
+public:
+	fdump():
+		m_fs("blockingHttp.dump", std::ios::binary)
+	{
+	}
+
+	void write(std::string_view buf)
+	{
+		m_fs.write(buf.data(), buf.size());
+	}
+
+private:
+	std::ofstream m_fs;
+};
+static fdump g_dump;
+#endif
 
 
 
@@ -12,6 +37,7 @@ QHttpConnection::QHttpConnection(std::string host, int port):
 	m_parser(Denon::Http::Method::Get)
 {
 }
+
 
 
 const Denon::Http::Response& QHttpConnection::Http(const Denon::Http::Request& req)
@@ -32,6 +58,10 @@ const Denon::Http::Response& QHttpConnection::Http(const Denon::Http::Request& r
 		m_socket.waitForReadyRead();
 		auto buf = m_parser.currentBuffer();
 		size_t nRead = m_socket.read(buf.first, buf.second);
+		#ifdef DUMP_DATA
+			g_dump.write({buf.first, nRead});
+		#endif
+
 		if(nRead == std::numeric_limits<size_t>::max())
 		{
 			std::cout << "QHttpConnection: Read Error: " << m_socket.errorString().toStdString() << "\n";

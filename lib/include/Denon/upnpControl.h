@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+#include <boost/property_tree/ptree.hpp>
+
 #include <Denon/http.h>
 
 
@@ -43,6 +45,7 @@ public:
 		std::map<std::string, ChannelState> channels;
 		double bass, treble, subwoofer, balance;
 		std::string preset;
+		std::vector<std::string> presetNames;
 	};
 
 	RenderingControl(Denon::Http::BlockingConnection* con);
@@ -176,6 +179,11 @@ private:
 	Denon::Upnp::SoapRequest m_request;
 };
 
+boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp, std::string param);
+
+DenonAct::AudioConfig ParseAudioConfig(const boost::property_tree::ptree& pt);
+
+DenonAct::ZoneStatus ParseZoneStatus(const boost::property_tree::ptree& pt);
 
 } // namespace Upnp
 } // namespace Denon

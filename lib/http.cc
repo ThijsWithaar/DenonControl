@@ -177,8 +177,13 @@ BeastConnection::BeastConnection(boost::asio::io_context& ioc, std::string host,
 	m_host(host)
 {
 	tcp::resolver resolver(ioc);
-	auto const results = resolver.resolve(host, std::to_string(port));
-	boost::asio::connect(m_socket, results.begin(), results.end());
+	m_resolve = resolver.resolve(host, std::to_string(port));
+}
+
+
+void BeastConnection::setCaptureFilename(std::string fname)
+{
+	m_capture.open(fname, std::ios::binary);
 }
 
 
@@ -200,14 +205,30 @@ const Response& BeastConnection::Http(const Request& req)
 	http::request<http::string_body> hreq{method, req.path, 11};
 	hreq.set(http::field::host, m_host);
 	hreq.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
+	for(auto field: req.fields)
+		hreq.set(field.first, field.second);
 	if(!req.body.empty())
 		hreq.body() = req.body;
 	hreq.prepare_payload();
 
+	boost::asio::connect(m_socket, m_resolve.begin(), m_resolve.end());
 	http::write(m_socket, hreq);
 
 	http::response<http::dynamic_body> res;
 	auto nRead = http::read(m_socket, m_buffer, res);
+
+	m_socket.close();
+
+	if(m_capture.is_open())
+	{
+		// Re-construct the header, don't know how else to get it
+		m_capture << "HTTP/1.1 " << res.result_int() << " " << res.result() << "\r\n";
+		for(auto& field: res)
+			m_capture << field.name_string() << ": " << field.value() << "\r\n";
+		m_capture << "\r\n";
+		m_capture << boost::beast::buffers_to_string(res.body().data());
+		m_capture.flush();
+	}
 
 	auto bdata = res.body().data();
 	m_response.status = res.result_int();

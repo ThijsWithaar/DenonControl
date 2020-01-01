@@ -131,6 +131,12 @@ RenderingControl::CurrentState RenderingControl::GetCurrentState()
 			cs.balance = it.second.get<int>("<xmlattr>.val");
 		else if(it.first == "Preset")
 			cs.preset = it.second.get<std::string>("<xmlattr>.val");
+		else if(it.first == "PresetNameList")
+		{
+			auto pnl = it.second.get<std::string>("<xmlattr>.val");
+			for(auto& name: split(pnl,","))
+				cs.presetNames.push_back(std::string(name));
+		}
 	}
 
 	return cs;
@@ -353,7 +359,7 @@ DenonAct::CurrentState DenonAct::GetCurrentState()
 	auto ev = ParseXml(cs).get_child("Event");
 
 	CurrentState r;
-	r.friendlyName = ev.get<std::string>("FriendlyName");
+	r.friendlyName = ev.get<std::string>("FriendlyName.<xmlattr>.val");
 	r.heosNetId = ev.get<std::string>("HEOSNetId");
 
 	auto ac = ev.get<std::string>("AudioConfig.<xmlattr>.val");

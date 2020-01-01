@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 3.10)
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
+
 project(Denon
 	VERSION 0.2
 	DESCRIPTION "Denon Audio/Video-Receiver control"
@@ -51,7 +53,7 @@ if(UNIX)
 	set(DESKTOP_DIR "/usr/share/applications")
 	set(PIXMAPS_DIR "/usr/share/icons")
 	install(FILES qtui/denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
-	install(FILES qtui/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtui/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
 
 	#find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
 	#install(CODE "execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${DESKTOP_DIR}/denon.desktop)")

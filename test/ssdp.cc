@@ -1,6 +1,12 @@
 #include <catch2/catch.hpp>
 
+#include <iostream>
+
 #include <Denon/ssdp.h>
+#include <Denon/http.h>
+
+
+#include "ssdp.dump.h"
 
 
 // 130 bytes
@@ -9,6 +15,20 @@ HOST: 239.255.255.250:1900
 MAN: "ssdp:discover"
 MX: 10
 ST: urn:schemas-upnp-org:device:MediaRenderer:1
+)";
+
+
+constexpr auto searchResponse = R"(HTTP/1.1 200 OK
+CACHE-CONTROL: max-age=180
+EXT:
+LOCATION: http://192.168.4.7:60006/upnp/desc/aios_device/aios_device.xml
+VERSIONS.UPNP.HEOS.COM: 10,21230580,-521045671,363364703,1840750642,105553199,-316033077,1711326982,395144743,-170053632,363364703
+NETWORKID.UPNP.HEOS.COM: b827eb4ccfb5
+BOOTID.UPNP.ORG: 344425180
+IPCACHE.URL.UPNP.HEOS.COM: /ajax/upnp/get_device_info
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+ST: urn:schemas-upnp-org:device:MediaServer:1
+USN: uuid:4c8f081e-802e-1c18-d77c-423dae53ee1a::urn:schemas-upnp-org:device:MediaServer:1
 )";
 
 
@@ -69,34 +89,155 @@ USN: uuid:4c8f081e-802e-1c18-d77c-423dae53ee1a::urn:schemas-upnp-org:service:Con
 )";
 
 
-TEST_CASE("Parse Search")
+
+
+namespace std {
+template<typename Key, typename Value>
+std::ostream& operator<<(std::ostream& os, std::map<Key, Value> map)
 {
-	SECTION("media")
+	for(auto& it: map)
+		os << "{" << it.first << " : " << it.second << "}, ";
+	return os;
+}
+} // std
+
+
+namespace Ssdp {
+std::ostream& operator<<(std::ostream& os, Ssdp::Notify n)
+{
+	return os << "type: " << n.nt << ", loc: " << n.location << ", fields: [ " << n.custom << " ]\n";
+}
+}
+
+
+#ifdef HAS_BOOST_BEAST
+TEST_CASE("Capture SSDP", "[!hide]")
+{
+	const std::string discoverIp = "192.168.3.10";
+	auto itf = boost::asio::ip::make_address_v4(discoverIp);
+
+	boost::asio::io_context ioc;
+
+	std::ofstream fdump("ssdp.dump");
+	auto onRx = [&](boost::asio::ip::address_v4 sender, std::string_view msg)
+	{
+		std::cout << "Received " << msg.size() << " bytes from " << sender.to_string() << "\n";
+		fdump.write(msg.data(), msg.size());
+	};
+
+	Ssdp::Connection con(ioc, itf, onRx);
+
+	std::cout << "Listening" << std::endl;
+	using namespace std::chrono_literals;
+	ioc.run_for(60s);
+
+	std::cout << "Exiting" << std::endl;
+}
+
+
+TEST_CASE("Client", "[!hide]")
+{
+	auto itf = boost::asio::ip::make_address_v4("192.168.3.10");
+	boost::asio::io_context ioc;
+
+	std::vector<Ssdp::Notify> notifies;
+	auto notify = [&notifies](boost::asio::ip::address_v4 sender, Ssdp::Notify f)
+	{
+		std::cout << "Notified " << f.location << " from " << sender.to_string() << "\n";
+		notifies.push_back(f);
+		return;
+	};
+
+	Ssdp::Client client(ioc, itf, notify);
+	client.Search("*");
+}
+#endif
+
+
+TEST_CASE("SSDP Parse")
+{
+	SECTION("search MediaRenderer")
 	{
 		auto sn = Ssdp::Parse(searchMedia);
 		REQUIRE(std::holds_alternative<Ssdp::Search>(sn));
+
 		auto s = std::get<Ssdp::Search>(sn);
 		CHECK(s.searchType == "urn:schemas-upnp-org:device:MediaRenderer:1");
 	}
 
-	SECTION("denon")
+	SECTION("response MediaServer")
+	{
+		auto sn = Ssdp::Parse(searchResponse);
+		REQUIRE(std::holds_alternative<Ssdp::Response>(sn));
+
+		auto r = std::get<Ssdp::Response>(sn);
+		CHECK(r.nt == "urn:schemas-upnp-org:device:MediaServer:1");
+	}
+
+	SECTION("Search Denon")
 	{
 		auto sn = Ssdp::Parse(searchActDenon);
 		REQUIRE(std::holds_alternative<Ssdp::Search>(sn));
+
 		auto s = std::get<Ssdp::Search>(sn);
 		CHECK(s.searchType == "urn:schemas-denon-com:device:ACT-Denon:1");
+	}
+
+	SECTION("Notify: ConnectionManager")
+	{
+		auto sn = Ssdp::Parse(notifyConnectionManager);
+		REQUIRE(std::holds_alternative<Ssdp::Notify>(sn));
+
+		auto n = std::get<Ssdp::Notify>(sn);
+		CHECK(n.nt == "urn:schemas-upnp-org:service:ConnectionManager:1");
+		CHECK(n.location == "http://192.168.4.7:60006/upnp/desc/aios_device/aios_device.xml");
 	}
 }
 
 
-TEST_CASE("Parse Notify")
+TEST_CASE("SSDP generate")
 {
-	SECTION("con man")
+	SECTION("Search")
 	{
-		auto sn = Ssdp::Parse(notifyConnectionManager);
+		Ssdp::Search search;
+		search.searchType = "urn:schemas:xx:1";
+
+		std::string searchStr = search;
+		CHECK(Catch::startsWith(searchStr, "M-SEARCH * HTTP/1.1\r\n"));
+
+		auto sn = Ssdp::Parse(searchStr);
+		REQUIRE(std::holds_alternative<Ssdp::Search>(sn));
+
+		auto searchTest = std::get<Ssdp::Search>(sn);
+		CHECK(search.searchType == searchTest.searchType);
+	}
+
+	SECTION("Response")
+	{
+		Ssdp::Response response;
+		response.location = "http://127.0.0.1";
+
+		std::string responseStr = response;
+		CHECK(Catch::startsWith(responseStr, "HTTP/1.1 200 OK\r\n"));
+
+		auto sn = Ssdp::Parse(responseStr);
+		REQUIRE(std::holds_alternative<Ssdp::Response>(sn));
+	}
+
+	SECTION("Notify")
+	{
+		Ssdp::Notify notify;
+		notify.location = "http://127.0.0.1";
+		notify.nt = "urn:schemas:xx:1";
+		notify.custom["CONTENT-LENGTH"] = "0";
+
+		std::string notifyStr = notify;
+		CHECK(Catch::startsWith(notifyStr, "NOTIFY * HTTP/1.1\r\n"));
+
+		auto sn = Ssdp::Parse(notifyStr);
 		REQUIRE(std::holds_alternative<Ssdp::Notify>(sn));
-		auto n = std::get<Ssdp::Notify>(sn);
-		CHECK(n.nt == "urn:schemas-upnp-org:service:ConnectionManager:1");
-		CHECK(n.location == "http://192.168.4.7:60006/upnp/desc/aios_device/aios_device.xml");
+
+		auto notifyTest = std::get<Ssdp::Notify>(sn);
+		CHECK(notify == notifyTest);
 	}
 }
