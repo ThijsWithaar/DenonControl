@@ -3,7 +3,7 @@
 #include <QTcpSocket>
 #include <QHostAddress>
 
-#include <Denon/http.h>
+#include <Denon/network/http.h>
 
 
 class QHttpConnection: public Denon::Http::BlockingConnection

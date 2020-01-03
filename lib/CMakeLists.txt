@@ -3,8 +3,8 @@ project(Denon)
 find_package(Boost QUIET REQUIRED COMPONENTS system)
 find_package(Threads REQUIRED)
 
-file(GLOB SRC CONFIGURE_DEPENDS *.cc)
-file(GLOB HDR CONFIGURE_DEPENDS include/*/*.h)
+file(GLOB_RECURSE SRC CONFIGURE_DEPENDS *.cc)
+file(GLOB HDR CONFIGURE_DEPENDS include/*/*.h include/*/*/*.h)
 
 add_library(${PROJECT_NAME}
 	${SRC}
@@ -28,3 +28,7 @@ endif()
 
 install(TARGETS ${PROJECT_NAME} DESTINATION lib COMPONENT dev)
 install(FILES ${HDR} DESTINATION include/Denon COMPONENT dev)
+
+if (CPACK_DEB_COMPONENT_INSTALL)
+	set(CPACK_DEBIAN_DEV_PACKAGE_SHLIBDEPS ON PARENT_SCOPE)
+endif()

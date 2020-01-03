@@ -1,4 +1,4 @@
-#include <Denon/ssdp.h>
+#include <Denon/network/ssdp.h>
 
 #include <iostream>
 #include <filesystem>
@@ -8,11 +8,14 @@
 	#include <pwd.h>
 #endif
 
+#include <boost/asio/local/stream_protocol.hpp>
+
+#include <Denon/network/http.h>
+#include <Denon/string.h>
+
+
 #define DEBUG_LVL 2
 
-
-#include <Denon/http.h>
-#include <Denon/string.h>
 
 
 namespace Ssdp {
@@ -21,6 +24,7 @@ namespace Ssdp {
 constexpr short multicast_port = 1900;
 
 const boost::asio::ip::address_v4 multicast_address = boost::asio::ip::make_address_v4("239.255.255.250");
+const boost::asio::ip::address_v6 multicast_address6 = boost::asio::ip::make_address_v6("FF02::C");
 
 
 bool sameSubnet(
@@ -39,16 +43,19 @@ bool sameSubnet(
 #ifdef __linux__
 
 
-std::string GetConfigurationPath(std::string fname, bool create)
+std::string GetConfigurationPath(std::string fname, bool system)
 {
 	const char *homedir;
 	if((homedir = getenv("HOME")) == nullptr)
 		homedir = getpwuid(getuid())->pw_dir;
 
-	std::string ret = std::string(homedir) + "/." + fname;
-	if(std::filesystem::exists(ret) || create)
-		return ret;
-	return "/etc/" + fname;
+	std::string sys = "/etc/" + fname;
+	std::string user = std::string(homedir) + "/." + fname;
+
+	if(std::filesystem::exists(user) && !system)
+		return user;
+
+	return sys;
 }
 
 
@@ -250,6 +257,7 @@ std::variant<Search, Response, Notify> Parse(std::string_view message)
 }
 
 
+
 //-- Connection --
 
 
@@ -363,7 +371,9 @@ Connection::Connection(
 		m_multicast(io_context, interfaceAddress, onReceive),
 		m_listen(io_context, interfaceAddress, onReceive)
 {
-	std::cout << "SSDP Connection on interface: " << interfaceAddress.to_string() << std::endl;
+	#if DEBUG_LVL > 0
+		std::cout << "SSDP Connection on interface: " << interfaceAddress.to_string() << std::endl;
+	#endif
 }
 
 
@@ -423,101 +433,6 @@ void Client::OnReceive(boost::asio::ip::address_v4 sender, std::string_view msg)
 
 		ServiceCache::Key key{pNotify->nt, pNotify->location};
 		m_cache.services[key] = *pNotify;
-	}
-}
-
-
-//-- Bridge --
-
-
-Bridge::Bridge(boost::asio::io_context& io_context, Settings settings):
-	m_Client(io_context, boost::asio::ip::make_address_v4(settings.client.ip), [this](auto sender, auto msg){ this->OnReceiveFromClient(sender, msg); }),
-	m_Server(io_context, boost::asio::ip::make_address_v4(settings.server.ip), [this](auto sender, auto msg){ this->OnReceiveFromServer(sender, msg); })
-{
-}
-
-
-void Bridge::OnReceiveFromClient(boost::asio::ip::address_v4 sender, const std::string_view& data)
-{
-	auto sn = Parse(data);
-	if(auto pNotify = std::get_if<Ssdp::Notify>(&sn))
-	{
-		ServiceCache::Key key{pNotify->nt, pNotify->location};
-		#if DEBUG_LVL > 1
-			if(m_cache.services.count(key) == 0)
-				std::cout << "Client Notify:\t" << pNotify->nt << std::endl;
-		#endif
-		m_cache.services[key] = *pNotify;
-	}
-	else if(auto pSearch = std::get_if<Ssdp::Search>(&sn))
-	{
-		#if DEBUG_LVL > 1
-			std::cout << "Client Search:\t" << pSearch->searchType << std::endl;
-		#endif
-		for(auto& it: m_cache.services)
-		{
-			if(it.first.urn == pSearch->searchType)
-			{
-				#if DEBUG_LVL > 1
-					std::cout << "Bridge->Client(" << sender.to_string() << "):\t" << it.second.nt << std::endl;
-				#endif
-				std::string msg = Response(it.second);
-				m_Client.send(sender, msg);
-			}
-		}
-	}
-    else
-	{
-		std::cout << "Client->Server: Unknown\n" << data << std::endl;
-	}
-
-	m_Server.broadcast(data);
-}
-
-
-void Bridge::OnReceiveFromServer(boost::asio::ip::address_v4 sender, const std::string_view& data)
-{
-	bool m_cacheNotify = true;
-	auto sn = Parse(data);
-	if(auto pNotify = std::get_if<Ssdp::Notify>(&sn))
-	{
-		if(m_cacheNotify)
-		{
-			ServiceCache::Key key{pNotify->nt, pNotify->location};
-			#if DEBUG_LVL > 1
-				if(m_cache.services.count(key) == 0)
-					std::cout << "New service from server by notify:\t" << pNotify->nt << std::endl;
-			#endif
-			m_cache.services[key] = *pNotify;
-		}
-
-		//std::cout << "Server: Notify -> client\n";
-		//m_Client.send(data);
-	}
-	else if(auto pResponse = std::get_if<Ssdp::Response>(&sn))
-	{
-		ServiceCache::Key key{pResponse->nt, pResponse->location};
-		#if DEBUG_LVL > 1
-			if(m_cache.services.count(key) == 0)
-				std::cout << "New service from server by response:\t" << pResponse->nt << " at " << pResponse->location << std::endl;
-		#endif
-		m_cache.services[key] = Notify(*pResponse);
-
-		#if DEBUG_LVL > 1
-			std::cout << "Server: Response as Notify -> client\n";
-		#endif
-		std::string msg = Notify(*pResponse);
-		m_Client.broadcast(msg);
-
-		// TODO: Match to outstanding searches, and reply to specific IP
-		//m_Client.send(,msg);
-	}
-	else
-	{
-		#if DEBUG_LVL > 1
-			std::cout << "Server: Other (search?) -> Client\n" << data << std::endl;
-		#endif
-		m_Client.broadcast(data);
 	}
 }
 

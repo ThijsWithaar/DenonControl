@@ -2,9 +2,9 @@
 
 #include <iostream>
 
-#include <Denon/http.h>
+#include <Denon/network/http.h>
+#include <Denon/network/ssdp.h>
 #include <Denon/upnpControl.h>
-#include <Denon/ssdp.h>
 
 #include "blockingHttp.dump.h"
 

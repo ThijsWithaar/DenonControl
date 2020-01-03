@@ -16,9 +16,7 @@ environment:
 
 init:
  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
- - echo %VCPKG_DIR%
- - echo %VCPKG_DEFAULT_TRIPLET%
- - echo %CMAKE_GENERATOR%
+ - echo %CONFIGURATION%
  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
  - cmd: echo.set(VCPKG_BUILD_TYPE %CONFIGURATION%)>> %VCPKG_DIR%\triplets\%PLATFORM%-windows.cmake
  - cmd: type %VCPKG_DIR%\triplets\x64-windows.cmake
@@ -48,14 +46,16 @@ install:
 
 
 before_build:
- - cmd: cmake -G "%CMAKE_GENERATOR%" -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH=%QT_DIR% -DCMAKE_BUILD_TYPE=MinSizeRel -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
+ - cmd: cmake -G "Visual Studio 16 2019" -A x64 -T v142 -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH=%QT_DIR% -DCMAKE_BUILD_TYPE=MinSizeRel -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
  - sh: cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_BUILD_TYPE=MinSizeRel -H${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
 
 build_script:
- - cmake --build ./build -- package
+ - cmd: cmake --build build --target package
+ - sh: cmake --build ./build -- package
 
 test_script:
- - cmake --build ./build -- test
+ - cmd: cmake --build build --target test
+ - sh: cmake --build ./build -- test
 
 artifacts:
  - path: build/*.deb

@@ -3,7 +3,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 
 
-#include <Denon/http.h>
+#include <Denon/network/http.h>
 #include <Denon/string.h>
 #include <Denon/upnpEvent.h>
 

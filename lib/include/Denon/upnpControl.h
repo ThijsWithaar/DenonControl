@@ -6,7 +6,7 @@
 
 #include <boost/property_tree/ptree.hpp>
 
-#include <Denon/http.h>
+#include <Denon/network/http.h>
 
 
 namespace Denon {

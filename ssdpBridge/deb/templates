@@ -1,0 +1,15 @@
+Template: denon-server/title
+Type: title
+Description: SSDP Bridge
+
+Template: denon-server/client
+Type: select
+Choices: ${CHOICES}
+Description: Client interface
+  Where the user applications are connected which search for UPnP devices
+
+Template: denon-server/server
+Type: select
+Choices: ${CHOICES}
+Description: Server interface
+  Where the UPnP devices are connected, that send out SSDP notifies

@@ -7,7 +7,7 @@
 #include <boost/property_tree/xml_parser.hpp>
 
 #include <Denon/string.h>
-#include <Denon/http.h>
+#include <Denon/network/http.h>
 
 
 namespace Denon {

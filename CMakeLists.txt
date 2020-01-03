@@ -15,17 +15,18 @@ if(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" AND UNIX)
 	add_link_options(-Wl,--gc-sections -Wl,--strip-all)
 endif()
 
-add_subdirectory(lib)
-add_subdirectory(ssdpBridge)
-add_subdirectory(qtui)
-
-enable_testing()
-add_subdirectory(test)
-
 set(CPACK_PACKAGE_VENDOR "Withaar")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)
 set(CPACK_PACKAGE_EXECUTABLE "denonUi;Denon")
 set(CPACK_NSIS_MENU_LINKS "bin/denonUi.exe" "Denon")
+
+set(CPACK_DEB_COMPONENT_INSTALL ON)
+set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Thijs Withaar <thijs.withaar@gmail.com>")
+set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
+#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
+set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
+set(CPACK_STRIP_FILES TRUE)
+
 
 if(UNIX)
 	execute_process(
@@ -35,11 +36,6 @@ if(UNIX)
 	)
 	if(EXISTS /etc/debian_version)
 		set(CPACK_GENERATOR "DEB")
-		set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Thijs Withaar <thijs.withaar@gmail.com>")
-		set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
-		#set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
-		set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
-		set(CPACK_DEB_COMPONENT_INSTALL ON)
 
 		execute_process(COMMAND dpkg --print-architecture
 			OUTPUT_VARIABLE CPACK_DEBIAN_PACKAGE_ARCHITECTURE
@@ -47,25 +43,17 @@ if(UNIX)
 		)
 		set(CPACK_PACKAGE_FILE_NAME ${PROJECT_NAME}-${PROJECT_VERSION}-${LSB_RELEASE_DISTRIBUTOR}-${CPACK_DEBIAN_PACKAGE_ARCHITECTURE})
 	endif()
-
-	# Register in the start menu
-	# https://stackoverflow.com/questions/14235798/specify-an-icon-and-menu-entry-for-cmake-cpack-application
-	set(DESKTOP_DIR "/usr/share/applications")
-	set(PIXMAPS_DIR "/usr/share/icons")
-	install(FILES qtui/denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
-	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/qtui/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
-
-	#find_program(XDG-DESKTOP-MENU_EXECUTABLE xdg-desktop-menu)
-	#install(CODE "execute_process(COMMAND ${XDG-DESKTOP-MENU_EXECUTABLE} install --novendor ${DESKTOP_DIR}/denon.desktop)")
-
-	# start-menu entry
-	set(CPACK_DEBIAN_PACKAGE_CONTROL_EXTRA
-		"${CMAKE_CURRENT_SOURCE_DIR}/qtui/postinst"
-		"${CMAKE_CURRENT_SOURCE_DIR}/qtui/prerm"
-	)
 endif()
 
+
+add_subdirectory(lib)
+add_subdirectory(ssdpBridge)
+add_subdirectory(qtui)
+
+enable_testing()
+add_subdirectory(test)
+
 include(CPack)
-cpack_add_component(gui DISPLAY_NAME "Graphical User Interface")
-cpack_add_component(dev DISPLAY_NAME "Development" DISABLED)
-cpack_add_component(server DISPLAY_NAME "Server tools" DISABLED)
+cpack_add_component(GUI DISPLAY_NAME "Graphical User Interface")
+cpack_add_component(DEV DISPLAY_NAME "Development" DISABLED)
+cpack_add_component(SERVER DISPLAY_NAME "Server tools" DISABLED)

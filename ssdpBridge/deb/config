@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# Exit on error
+set -e
+
+# Source debconf library.
+. /usr/share/debconf/confmodule
+
+# Get interfaces from the operating system
+# 	http://www.fifi.org/doc/debconf-doc/tutorial.html
+# 	https://stackoverflow.com/a/32031807/673137
+# TODO: get them from ssdpBridge, to have them consistent
+declare -a net_interfaces;
+count=0;
+for interface in $(ip link show | awk '/^[0-9]/ {print $2;} ' | sed 's/:$//');
+do
+	if [ $interface != "lo" ] && [ $interface != "" ] ;
+	then
+		net_interfaces[$count]=$interface;
+		count=$((count+1));
+	fi
+done
+
+array::join() {
+  (($#)) || return 1 # At least delimiter required
+  local -- delim="$1" str IFS=
+  shift
+  str="${*/#/$delim}" # Expand arguments with prefixed delimiter (Empty IFS)
+  echo "${str:${#delim}}" # Echo without first delimiter
+}
+
+# Set the choices the user has, comma separated
+CHOICES=$(array::join ', ' "${net_interfaces[@]}")
+db_subst denon-server/client CHOICES "$CHOICES"
+db_subst denon-server/server CHOICES "$CHOICES"
+
+# Ask questions, even if already set
+#db_fset denon-server/client seen false
+#db_fset denon-server/server seen false
+db_settitle denon-server/title
+db_input high denon-server/client || true
+db_input high denon-server/server || true
+
+# Show interface
+db_go || true

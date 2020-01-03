@@ -1,4 +1,4 @@
-#include <Denon/scdp.h>
+#include <Denon/network/scdp.h>
 
 #include <iostream>
 

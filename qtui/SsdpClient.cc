@@ -4,7 +4,7 @@
 
 #include <QUrl>
 
-#include <Denon/ssdp.h>
+#include <Denon/network/ssdp.h>
 
 
 const QHostAddress ssdpHost = QHostAddress("239.255.255.250");

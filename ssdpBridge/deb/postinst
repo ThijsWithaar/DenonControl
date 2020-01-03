@@ -1,0 +1,14 @@
+#!/bin/sh
+set -e
+
+# Copy configuration to the system config file
+. /usr/share/debconf/confmodule
+
+db_get denon-server/client
+CLIENT=$RET
+db_get denon-server/server
+SERVER=$RET
+ssdpBridge --server $SERVER --client $CLIENT
+
+# Register as systemd service
+systemctl enable ssdpBridge.service

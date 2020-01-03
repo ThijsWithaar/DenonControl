@@ -1,5 +1,3 @@
-#include <Denon/ssdp.h>
-
 #include <algorithm>
 #include <iostream>
 #include <fstream>
@@ -8,6 +6,9 @@
 #include <boost/archive/xml_oarchive.hpp>
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
+
+#include <Denon/network/ssdp.h>
+#include <Denon/network/ssdpBridge.h>
 
 
 namespace boost {
@@ -24,9 +25,18 @@ void serialize(Archive & ar, Ssdp::Interface& s, const unsigned int version)
 
 
 template<class Archive>
+void serialize(Archive & ar, MiniSsdp::Server::Settings& s, const unsigned int version)
+{
+	ar & BOOST_SERIALIZATION_NVP(s.socketName);
+}
+
+
+template<class Archive>
 void serialize(Archive & ar, Ssdp::Bridge::Settings & s, const unsigned int version)
 {
-	ar & BOOST_SERIALIZATION_NVP(s.server) & BOOST_SERIALIZATION_NVP(s.client);
+	ar & BOOST_SERIALIZATION_NVP(s.server) &
+	     BOOST_SERIALIZATION_NVP(s.client) &
+	     BOOST_SERIALIZATION_NVP(s.ipc);
 }
 
 
@@ -38,6 +48,46 @@ bool operator==(Ssdp::Interface a, Ssdp::Interface b)
 {
 	return a.name == b.name;
 }
+
+
+std::ostream& operator<<(std::ostream& os, std::vector<Ssdp::Interface> itfs)
+{
+	for(auto itf: itfs)
+		os << itf.name << " ";
+	return os;
+}
+
+
+class SettingsConfiguration
+{
+public:
+	SettingsConfiguration()
+	{
+		m_cfgName = Ssdp::GetConfigurationPath("ssdpBridge", true);
+		try
+		{
+			std::ifstream fs(m_cfgName);
+			boost::archive::xml_iarchive ar(fs);
+			ar >> BOOST_SERIALIZATION_NVP(settings);
+		}
+		catch(...)
+		{
+			std::cerr << "Could not load settings " << m_cfgName << "\n";
+		}
+	}
+
+	~SettingsConfiguration()
+	{
+		std::cout << "Saving " << m_cfgName << "\n";
+		std::ofstream fs(m_cfgName);
+		boost::archive::xml_oarchive ar(fs);
+		ar << BOOST_SERIALIZATION_NVP(settings);
+	}
+
+	Ssdp::Bridge::Settings settings;
+private:
+	std::string m_cfgName;
+};
 
 
 Ssdp::Interface AskInterface(std::vector<Ssdp::Interface> itfs)
@@ -59,26 +109,20 @@ Ssdp::Interface AskInterface(std::vector<Ssdp::Interface> itfs)
 
 void Setup()
 {
-	Ssdp::Bridge::Settings settings;
+	SettingsConfiguration cfg;
 
 	auto itfs = Ssdp::GetNetworkInterfaces();
 
 	std::cout << "Select server interface\n";
-	settings.server = AskInterface(itfs);
+	cfg.settings.server = AskInterface(itfs);
 
 	itfs.erase(std::remove_if(itfs.begin(), itfs.end(), [&](auto it)
 	{
-		return it == settings.server;
+		return it == cfg.settings.server;
 	}), itfs.end());
 
 	std::cout << "Select client interface\n";
-	settings.client = AskInterface(itfs);
-
-	std::string cfgName = Ssdp::GetConfigurationPath("ssdpBridge", true);
-	std::ofstream ofs(cfgName);
-	boost::archive::xml_oarchive oa(ofs);
-	oa << BOOST_SERIALIZATION_NVP(settings);
-	std::cout << "Configuration saved to : " << cfgName << "\n";
+	cfg.settings.client = AskInterface(itfs);
 }
 
 
@@ -103,11 +147,15 @@ int main(int argc, char* argv[])
 	po::options_description desc("Allowed options");
 
 	bool help, setup, bridge;
+	std::string server, client, ipc;
 
 	desc.add_options()
 		("help", po::bool_switch(&help), "show the help message")
 		("setup", po::bool_switch(&setup), "interactive setup")
 		("bridge", po::bool_switch(&bridge), "run the bridge")
+		("server", po::value<std::string>(&server), "set server interface name")
+		("client", po::value<std::string>(&client), "set client interface name")
+		("ipc", po::value<std::string>(&ipc), "set minissdp socket filename")
 	;
 
 	po::variables_map vm;
@@ -116,6 +164,32 @@ int main(int argc, char* argv[])
 
 	if (help || argc == 1)
 		std::cout << desc << "\n";
+
+	if(!server.empty())
+	{
+		auto itfs = Ssdp::GetNetworkInterfaces();
+		auto itf = std::find_if(itfs.begin(), itfs.end(), [&server](Ssdp::Interface itf)
+		{
+			return itf.name == server;
+		});
+
+		SettingsConfiguration cfg;
+		cfg.settings.server = *itf;
+	}
+
+	if(!client.empty())
+	{
+		auto itfs = Ssdp::GetNetworkInterfaces();
+		auto itf = std::find_if(itfs.begin(), itfs.end(), [&client](Ssdp::Interface itf)
+		{
+			return itf.name == client;
+		});
+		if(itf == itfs.end())
+			std::cerr << "client " << client << " not found in " << itfs << "\n";
+
+		SettingsConfiguration cfg;
+		cfg.settings.client = *itf;
+	}
 
 	if(setup)
 		Setup();

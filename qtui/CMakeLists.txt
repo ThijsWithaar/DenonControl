@@ -84,3 +84,20 @@ if(WIN32)
 		FILES_MATCHING PATTERN "*.dll" PATTERN "*.conf"
 	)
 endif()
+
+if(UNIX)
+	# Desktop shortcut and icon
+	# https://stackoverflow.com/questions/14235798/specify-an-icon-and-menu-entry-for-cmake-cpack-application
+	set(DESKTOP_DIR "/usr/share/applications")
+	set(PIXMAPS_DIR "/usr/share/icons")
+	install(FILES denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
+	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
+
+	# Installer: Add to start-menu
+	if (CPACK_DEB_COMPONENT_INSTALL)
+		set(CPACK_DEBIAN_GUI_PACKAGE_SHLIBDEPS ON PARENT_SCOPE)
+		file(GLOB CONTROL_EXTRA CONFIGURE_DEPENDS ${CMAKE_CURRENT_SOURCE_DIR}/deb/*)
+		set(CPACK_DEBIAN_GUI_PACKAGE_CONTROL_EXTRA ${CONTROL_EXTRA} PARENT_SCOPE)
+		set(CPACK_DEBIAN_GUI_PACKAGE_CONTROL_STRICT_PERMISSION TRUE PARENT_SCOPE)
+	endif()
+endif()

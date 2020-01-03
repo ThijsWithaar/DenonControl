@@ -16,7 +16,7 @@ constexpr char path[] = "/upnp/desc/aios_device/aios_device.xml";
 
 /// Expand fname into an absolute path.
 /// $HOME/fname if it exists, otherwise /etc/fname
-std::string GetConfigurationPath(std::string fname, bool create);
+std::string GetConfigurationPath(std::string fname, bool system);
 
 /// Description of a network interface
 struct Interface
@@ -58,6 +58,19 @@ std::variant<Search, Response, Notify> Parse(std::string_view message);
 
 /// Returns a list of network interfaces
 std::vector<Interface> GetNetworkInterfaces();
+
+class ServiceCache
+{
+public:
+	struct Key
+	{
+		std::string urn, location;
+
+		bool operator<(const Key& o) const;
+	};
+
+	std::map<Key, Notify> services;
+};
 
 /// SSDP connection over UDP, linked to a single interface
 class Connection
@@ -119,19 +132,6 @@ private:
 	Listen m_listen;
 };
 
-class ServiceCache
-{
-public:
-	struct Key
-	{
-		std::string urn, location;
-
-		bool operator<(const Key& o) const;
-	};
-
-	std::map<Key, Notify> services;
-};
-
 /// SSDP Client, can search, with caching of past notifies
 class Client
 {
@@ -153,25 +153,5 @@ private:
 	Connection m_connection;
 	callback_t m_notify;
 };
-
-/// Bridge SSDP accross two interfaces
-class Bridge
-{
-public:
-	struct Settings
-	{
-		Interface server, client;
-	};
-
-	Bridge(boost::asio::io_context& io_context, Settings settings);
-
-private:
-	void OnReceiveFromClient(boost::asio::ip::address_v4 sender, const std::string_view& data);
-	void OnReceiveFromServer(boost::asio::ip::address_v4 sender, const std::string_view& data);
-
-	Connection m_Client, m_Server;
-	ServiceCache m_cache;
-};
-
 
 } // namespace Ssdp

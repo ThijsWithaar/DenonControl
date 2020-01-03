@@ -2,8 +2,12 @@
 
 #include <iostream>
 
-#include <Denon/ssdp.h>
-#include <Denon/http.h>
+#include <boost/asio/local/stream_protocol.hpp>
+
+#include <Denon/network/http.h>
+#include <Denon/network/ssdp.h>
+#include <Denon/network/ssdpIpc.h>
+
 
 
 #include "ssdp.dump.h"
@@ -135,7 +139,7 @@ TEST_CASE("Capture SSDP", "[!hide]")
 }
 
 
-TEST_CASE("Client", "[!hide]")
+TEST_CASE("Run SSDP Client", "[!hide]")
 {
 	auto itf = boost::asio::ip::make_address_v4("192.168.3.10");
 	boost::asio::io_context ioc;
@@ -149,9 +153,72 @@ TEST_CASE("Client", "[!hide]")
 	};
 
 	Ssdp::Client client(ioc, itf, notify);
-	client.Search("*");
+	client.Search("ssdp:all");
+	client.Search("urn:schemas-upnp-org:device:MediaRenderer:1");
+
+	using namespace std::chrono_literals;
+	ioc.run_for(30s);
 }
 #endif
+
+
+
+TEST_CASE("MiniSSDP Client", "[!hide]")
+{
+	boost::asio::io_context ioc;
+
+	// Start the server (otherwise, use minissdp)
+	MiniSsdp::Server::Settings ipcSettings;
+	Ssdp::ServiceCache cache;
+#if 0
+	ipcSettings.socketName = "minissdp.sock";
+	MiniSsdp::Server server(ioc, cache, ipcSettings);
+#endif
+
+	// Send a notify
+	Ssdp::Notify nt;
+	nt.location = "http://192.168.3.10";
+	nt.nt = "urn:schemas-denon-com:device:Dummy:1";
+	nt.custom["USN"] = "uuid:b00b13s-4f58-10c3-0080-0005cdb04ece::urn:schemas-upnp-org:service:Dummy:1";
+	nt.custom["SERVER"] = "Denon Unit test";
+
+	{
+		auto home = boost::asio::ip::make_address_v4("192.168.3.10");
+		//auto home = boost::asio::ip::make_address_v4("127.0.0.1");
+		Ssdp::Connection con(ioc, home, [](auto s, auto msg){});
+
+		std::string msg = nt;
+		con.broadcast(msg);		// These are received, but don't seem to make it into the cache
+		con.broadcast(notifyConnectionManager);
+		con.broadcast(notifyActDenon);
+		//con.send(home, msg);
+	}
+
+	auto ntCon = std::get<Ssdp::Notify>(Ssdp::Parse(notifyConnectionManager));
+	auto ntDenon = std::get<Ssdp::Notify>(Ssdp::Parse(notifyActDenon));
+
+	MiniSsdp::Client client(ioc, ipcSettings);
+
+	client.Submit(ntCon);
+	client.Submit(ntDenon);
+	client.Submit(nt);
+
+	auto ver = client.GetVersion();
+	CHECK(ver.size() > 0);
+	auto ver2 = client.GetVersion();
+	CHECK(ver2.size() > 0);
+	//std::cout << "Version : " << ver << "\n";
+
+	auto conUsn = client.SearchUsn(ntCon.custom["USN"]);
+	CHECK(conUsn.size() == 2);
+
+	auto denUsn = client.SearchUsn(ntDenon.custom["USN"]);
+	CHECK(denUsn.size() == 2);
+
+	client.SearchType(nt.nt);
+	auto all = client.RequestAll();
+	CHECK(all.size() > 3);
+}
 
 
 TEST_CASE("SSDP Parse")
