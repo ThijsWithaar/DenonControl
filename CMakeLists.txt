@@ -14,6 +14,9 @@ if(CMAKE_BUILD_TYPE STREQUAL "MinSizeRel" AND UNIX)
 	add_compile_options(-fdata-sections -ffunction-sections)
 	add_link_options(-Wl,--gc-sections -Wl,--strip-all)
 endif()
+if(WIN32)
+	add_compile_definitions(_WIN32_WINNT=0x0A00) # Windows 10
+endif()
 
 set(CPACK_PACKAGE_VENDOR "Withaar")
 set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_SOURCE_DIR}/LICENSE)

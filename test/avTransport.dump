@@ -1,0 +1,112 @@
+HTTP/1.1 200 OK
+CONTENT-LENGTH: 4375
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetCurrentStateResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<CurrentState>&lt;Event xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/AVT/&quot;&gt;&lt;InstanceID val=&quot;0&quot;&gt;&lt;AVTransportURI val=&quot;file:///etc/sapphire/settings/nppl.xml&quot;/&gt;&lt;CurrentMediaDuration val=&quot;00:00:00&quot;/&gt;&lt;CurrentPlayMode val=&quot;NORMAL&quot;/&gt;&lt;CurrentTrack val=&quot;1&quot;/&gt;&lt;CurrentTrackDuration val=&quot;00:00:00&quot;/&gt;&lt;CurrentTrackURI val=&quot;aiosws://tunein/stream/https%3A%2F%2Fplayerservices.streamtheworld.com%2Fapi%2Flivestream-redirect%2FSRGSTR05AAC.aac%3Fdist%3Dtunein/s115770/?username=nothing&amp;amp;auth=nothing&quot;/&gt;&lt;NextAVTransportURI val=&quot;&quot;/&gt;&lt;NumberOfTracks val=&quot;3&quot;/&gt;&lt;PlaybackStorageMedium val=&quot;NETWORK&quot;/&gt;&lt;PossiblePlaybackStorageMedia val=&quot;NONE,NETWORK&quot;/&gt;&lt;PossibleRecordStorageMedia val=&quot;NOT_IMPLEMENTED&quot;/&gt;&lt;TransportPlaySpeed val=&quot;1&quot;/&gt;&lt;TransportState val=&quot;PLAYING&quot;/&gt;&lt;TransportStatus val=&quot;OK&quot;/&gt;&lt;X_Shuffle val=&quot;0&quot;/&gt;&lt;CurrentTransportActions val=&quot;Play,Stop&quot;/&gt;&lt;AVTransportURIMetaData val=&quot;&amp;lt;DIDL-Lite xmlns=&amp;quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&amp;quot; xmlns:dc=&amp;quot;http://purl.org/dc/elements/1.1/&amp;quot; xmlns:upnp=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/&amp;quot;&amp;gt;&amp;lt;item id=&amp;quot;1&amp;quot; parentID=&amp;quot;1&amp;quot; restricted=&amp;quot;1&amp;quot;&amp;gt;&amp;lt;dc:title&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/dc:title&amp;gt;&amp;lt;res protocolInfo=&amp;quot;http-get:*:*:*&amp;quot; size=&amp;quot;0&amp;quot; duration=&amp;quot;00:00:00&amp;quot;&amp;gt;file:///etc/sapphire/settings/nppl.xml&amp;lt;/res&amp;gt;&amp;lt;upnp:class&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:class&amp;gt;&amp;lt;dc:creator&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/dc:creator&amp;gt;&amp;lt;upnp:genre&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:genre&amp;gt;&amp;lt;upnp:artist&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:artist&amp;gt;&amp;lt;upnp:album&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:album&amp;gt;&amp;lt;upnp:albumArtURI&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:albumArtURI&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&quot;/&gt;&lt;CurrentTrackMetaData val=&quot;&amp;lt;DIDL-Lite xmlns=&amp;quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&amp;quot; xmlns:dc=&amp;quot;http://purl.org/dc/elements/1.1/&amp;quot; xmlns:upnp=&amp;quot;urn:schemas-upnp-org:metadata-1-0/upnp/&amp;quot;&amp;gt;&amp;lt;item id=&amp;quot;https://playerservices.streamtheworld.com/api/livestream-redirect/SRGSTR05AAC.aac?dist=tunein&amp;quot; parentID=&amp;quot;s115770&amp;quot; restricted=&amp;quot;1&amp;quot;&amp;gt;&amp;lt;dc:title&amp;gt;Informer&amp;lt;/dc:title&amp;gt;&amp;lt;res protocolInfo=&amp;quot;http-get:*:*:*&amp;quot; size=&amp;quot;0&amp;quot; bitrate=&amp;quot;65134&amp;quot; sampleFrequency=&amp;quot;22050&amp;quot; duration=&amp;quot;00:00:00&amp;quot;&amp;gt;aiosws://tunein/stream/https%3A%2F%2Fplayerservices.streamtheworld.com%2Fapi%2Flivestream-redirect%2FSRGSTR05AAC.aac%3Fdist%3Dtunein/s115770/?username=nothing&amp;amp;amp;auth=nothing&amp;lt;/res&amp;gt;&amp;lt;desc id=&amp;quot;audioFormat&amp;quot; nameSpace=&amp;quot;urn:schemas-denon-com:metadata/&amp;quot; xmlns:aios=&amp;quot;urn:schemas-denon-com:metadata/&amp;quot;&amp;gt;AAC&amp;lt;/desc&amp;gt;&amp;lt;upnp:class&amp;gt;object.item.audioItem.musicTrack&amp;lt;/upnp:class&amp;gt;&amp;lt;dc:creator&amp;gt;Snow&amp;lt;/dc:creator&amp;gt;&amp;lt;upnp:genre&amp;gt;&amp;amp;quot;&amp;amp;quot;&amp;lt;/upnp:genre&amp;gt;&amp;lt;upnp:artist&amp;gt;Snow&amp;lt;/upnp:artist&amp;gt;&amp;lt;upnp:album&amp;gt;Sky Radio 90&amp;amp;apos;s Hits&amp;lt;/upnp:album&amp;gt;&amp;lt;upnp:albumArtURI&amp;gt;http://cdn-profiles.tunein.com/s115770/images/logoq.png?t=1&amp;lt;/upnp:albumArtURI&amp;gt;&amp;lt;/item&amp;gt;&amp;lt;/DIDL-Lite&amp;gt;&quot;/&gt;&lt;NextAVTransportURIMetaData val=&quot;&quot;/&gt;&lt;/InstanceID&gt;&lt;/Event&gt;</CurrentState>
+</u:GetCurrentStateResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 320
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetCurrentTransportActionsResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<Actions>Play,Stop</Actions>
+</u:GetCurrentTransportActionsResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 377
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetDeviceCapabilitiesResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<PlayMedia>NONE,NETWORK</PlayMedia>
+<RecMedia></RecMedia>
+<RecQualityModes></RecQualityModes>
+</u:GetDeviceCapabilitiesResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 1481
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetMediaInfoResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<NrTracks>3</NrTracks>
+<MediaDuration>00:00:00</MediaDuration>
+<CurrentURI>file:///etc/sapphire/settings/nppl.xml</CurrentURI>
+<CurrentURIMetaData>&lt;DIDL-Lite xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot;&gt;&lt;item id=&quot;1&quot; parentID=&quot;1&quot; restricted=&quot;1&quot;&gt;&lt;dc:title&gt;&amp;quot;&amp;quot;&lt;/dc:title&gt;&lt;res protocolInfo=&quot;http-get:*:*:*&quot; size=&quot;0&quot; duration=&quot;00:00:00&quot;&gt;file:///etc/sapphire/settings/nppl.xml&lt;/res&gt;&lt;upnp:class&gt;&amp;quot;&amp;quot;&lt;/upnp:class&gt;&lt;dc:creator&gt;&amp;quot;&amp;quot;&lt;/dc:creator&gt;&lt;upnp:genre&gt;&amp;quot;&amp;quot;&lt;/upnp:genre&gt;&lt;upnp:artist&gt;&amp;quot;&amp;quot;&lt;/upnp:artist&gt;&lt;upnp:album&gt;&amp;quot;&amp;quot;&lt;/upnp:album&gt;&lt;upnp:albumArtURI&gt;&amp;quot;&amp;quot;&lt;/upnp:albumArtURI&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</CurrentURIMetaData>
+<NextURI></NextURI>
+<NextURIMetaData></NextURIMetaData>
+<PlayMedium>NETWORK</PlayMedium>
+<RecordMedium>NOT_IMPLEMENTED</RecordMedium>
+<WriteStatus>NOT_IMPLEMENTED</WriteStatus>
+</u:GetMediaInfoResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 2031
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetPositionInfoResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<Track>1</Track>
+<TrackDuration>00:00:00</TrackDuration>
+<TrackMetaData>&lt;DIDL-Lite xmlns=&quot;urn:schemas-upnp-org:metadata-1-0/DIDL-Lite/&quot; xmlns:dc=&quot;http://purl.org/dc/elements/1.1/&quot; xmlns:upnp=&quot;urn:schemas-upnp-org:metadata-1-0/upnp/&quot;&gt;&lt;item id=&quot;https://playerservices.streamtheworld.com/api/livestream-redirect/SRGSTR05AAC.aac?dist=tunein&quot; parentID=&quot;s115770&quot; restricted=&quot;1&quot;&gt;&lt;dc:title&gt;Informer&lt;/dc:title&gt;&lt;res protocolInfo=&quot;http-get:*:*:*&quot; size=&quot;0&quot; bitrate=&quot;65134&quot; sampleFrequency=&quot;22050&quot; duration=&quot;00:00:00&quot;&gt;aiosws://tunein/stream/https%3A%2F%2Fplayerservices.streamtheworld.com%2Fapi%2Flivestream-redirect%2FSRGSTR05AAC.aac%3Fdist%3Dtunein/s115770/?username=nothing&amp;amp;auth=nothing&lt;/res&gt;&lt;desc id=&quot;audioFormat&quot; nameSpace=&quot;urn:schemas-denon-com:metadata/&quot; xmlns:aios=&quot;urn:schemas-denon-com:metadata/&quot;&gt;AAC&lt;/desc&gt;&lt;upnp:class&gt;object.item.audioItem.musicTrack&lt;/upnp:class&gt;&lt;dc:creator&gt;Snow&lt;/dc:creator&gt;&lt;upnp:genre&gt;&amp;quot;&amp;quot;&lt;/upnp:genre&gt;&lt;upnp:artist&gt;Snow&lt;/upnp:artist&gt;&lt;upnp:album&gt;Sky Radio 90&amp;apos;s Hits&lt;/upnp:album&gt;&lt;upnp:albumArtURI&gt;http://cdn-profiles.tunein.com/s115770/images/logoq.png?t=1&lt;/upnp:albumArtURI&gt;&lt;/item&gt;&lt;/DIDL-Lite&gt;</TrackMetaData>
+<TrackURI>aiosws://tunein/stream/https%3A%2F%2Fplayerservices.streamtheworld.com%2Fapi%2Flivestream-redirect%2FSRGSTR05AAC.aac%3Fdist%3Dtunein/s115770/?username=nothing&amp;auth=nothing</TrackURI>
+<RelTime>00:00:08</RelTime>
+<AbsTime>NOT_IMPLEMENTED</AbsTime>
+<RelCount>2147483647</RelCount>
+<AbsCount>2147483647</AbsCount>
+</u:GetPositionInfoResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 411
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetTransportInfoResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<CurrentTransportState>PLAYING</CurrentTransportState>
+<CurrentTransportStatus>OK</CurrentTransportStatus>
+<CurrentSpeed>1</CurrentSpeed>
+</u:GetTransportInfoResponse>
+</s:Body> </s:Envelope>HTTP/1.1 200 OK
+CONTENT-LENGTH: 357
+Accept-Ranges: bytes
+CONTENT-TYPE: text/xml; charset="utf-8"
+DATE: Fri, 03 Jan 2020 19:14:52 GMT
+EXT: 
+SERVER: LINUX UPnP/1.0 Denon-Heos/150495
+X-User-Agent: redsonic
+
+<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/"><s:Body>
+<u:GetTransportSettingsResponse xmlns:u="urn:schemas-upnp-org:service:AVTransport:1">
+<PlayMode>NORMAL</PlayMode>
+<RecQualityMode>NOT_IMPLEMENTED</RecQualityMode>
+</u:GetTransportSettingsResponse>
+</s:Body> </s:Envelope>

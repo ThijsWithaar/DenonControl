@@ -2,6 +2,9 @@
 
 #include <Denon/network/ssdp.h>
 
+#ifdef _WIN32
+	#include <boost/asio/windows/stream_handle.hpp>
+#endif
 
 namespace MiniSsdp {
 
@@ -42,8 +45,12 @@ private:
 	void GetUSN();
 	void GetAll();
 
-	boost::asio::local::stream_protocol::acceptor m_acceptor;
-	boost::asio::local::stream_protocol::socket m_socket;
+	#ifdef __linux__
+		boost::asio::local::stream_protocol::acceptor m_acceptor;
+		boost::asio::local::stream_protocol::socket m_socket;
+	#else
+		boost::asio::windows::stream_handle m_socket;
+	#endif
 	boost::asio::streambuf m_rxBuf;
 	std::vector<char> m_txBuf;
 	Ssdp::ServiceCache& m_cache;
@@ -68,7 +75,11 @@ private:
 	std::vector<std::string_view> Dispatch(Server::RequestType rqType);
 	static std::vector<Ssdp::Response> SplitResponses(std::vector<std::string_view> strings);
 
-	boost::asio::local::stream_protocol::socket m_socket;
+	#ifdef __linux__
+		boost::asio::local::stream_protocol::socket m_socket;
+	#else
+		boost::asio::windows::stream_handle m_socket;
+	#endif
 	Settings m_settings;
 	boost::asio::streambuf m_rxBuf;
 	std::vector<char> m_txBuf;

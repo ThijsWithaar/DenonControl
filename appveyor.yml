@@ -11,7 +11,6 @@ platform:
 environment:
     VCPKG_DIR: C:\Tools\vcpkg
     VCPKG_DEFAULT_TRIPLET: x64-windows
-    CMAKE_GENERATOR: Ninja
     QT_DIR: C:\Qt\latest\msvc2017_64
 
 init:
@@ -54,7 +53,7 @@ build_script:
  - sh: cmake --build ./build -- package
 
 test_script:
- - cmd: cmake --build build --target test
+ #- cmd: cmake --build build --target test
  - sh: cmake --build ./build -- test
 
 artifacts:

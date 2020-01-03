@@ -30,7 +30,7 @@ endif()
 file(GLOB SVGS CONFIGURE_DEPENDS *.svg)
 
 #find_program (INKSCAPE NAMES inkscape PATHS "/usr/bin" NO_DEFAULT_PATH)
-find_program (MAGICK NAMES convert-im6 magick PATHS "/usr/bin")
+find_program (MAGICK NAMES convert-im6 magick PATHS "/usr/bin" "C:/Program Files/ImageMagick-7.0.9-Q16")
 foreach(SVG ${SVGS})
 	get_filename_component(SVG_WE ${SVG} NAME_WE)
 	set(PNG_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.png)

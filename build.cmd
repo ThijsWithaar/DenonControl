@@ -1,6 +1,9 @@
 call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
 SET VCPKG_ROOT=C:\build\vcpkg
 
+# https://chocolatey.org/install
+choco install imagemagick.app
+
 %VCPKG_ROOT%\vcpkg.exe install boost-beast boost-system boost-program-options boost-property-tree boost-serialization
 %VCPKG_ROOT%\vcpkg.exe install qt5-base
 

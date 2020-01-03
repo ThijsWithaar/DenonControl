@@ -7,6 +7,12 @@
 #include <boost/format.hpp>
 #include <boost/program_options.hpp>
 
+#ifdef __linux__
+	#include <sys/types.h>
+	#include <grp.h>
+	#include <pwd.h>
+#endif
+
 #include <Denon/network/ssdp.h>
 #include <Denon/network/ssdpBridge.h>
 
@@ -126,6 +132,20 @@ void Setup()
 }
 
 
+void DropPriviliges(const char* username)
+{
+#ifdef __linux__
+	struct passwd *pw = NULL;
+	pw = getpwnam(username);
+	const char* name = nullptr;
+	int gid = 0;
+	initgroups(pw->pw_name, pw->pw_gid);
+	setgid(pw->pw_gid);
+	setuid(pw->pw_uid);
+#endif
+}
+
+
 void Bridge()
 {
 	Ssdp::Bridge::Settings settings;
@@ -137,6 +157,9 @@ void Bridge()
 
 	boost::asio::io_context io_context;
 	Ssdp::Bridge bridge(io_context, settings);
+
+	// DropPriviliges(username);
+
 	io_context.run();
 }
 
@@ -184,11 +207,17 @@ int main(int argc, char* argv[])
 		{
 			return itf.name == client;
 		});
+		SettingsConfiguration cfg;
 		if(itf == itfs.end())
 			std::cerr << "client " << client << " not found in " << itfs << "\n";
+		else
+			cfg.settings.client = *itf;
+	}
 
+	if(!ipc.empty())
+	{
 		SettingsConfiguration cfg;
-		cfg.settings.client = *itf;
+		cfg.settings.ipc.socketName = ipc;
 	}
 
 	if(setup)

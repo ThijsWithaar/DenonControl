@@ -69,6 +69,128 @@ SoapRequest::operator Denon::Http::Request()
 }
 
 
+//-- AV Transport --
+
+
+AvTransport::AvTransport(Denon::Http::BlockingConnection* con):
+	m_con(con)
+{
+	m_request.type = "urn:schemas-upnp-org:service:AVTransport:1";
+	m_request.path = "/upnp/control/renderer_dvc/AVTransport";
+}
+
+
+AvTransport::CurrentState AvTransport::GetCurrentState()
+{
+	m_request.actionName = "GetCurrentState";
+	auto& resp = m_con->Http(m_request);
+
+	AvTransport::CurrentState r;
+	return r;
+}
+
+
+void AvTransport::GetCurrentTransportActions(int instanceId)
+{
+	m_request.actionName = "GetCurrentTransportActions";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::GetDeviceCapabilities(int instanceId)
+{
+	m_request.actionName = "GetDeviceCapabilities";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::GetMediaInfo(int instanceId)
+{
+	m_request.actionName = "GetMediaInfo";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::GetPositionInfo(int instanceId)
+{
+	m_request.actionName = "GetPositionInfo";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::GetTransportInfo(int instanceId)
+{
+	m_request.actionName = "GetTransportInfo";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::GetTransportSettings(int instanceId)
+{
+	m_request.actionName = "GetTransportSettings";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	auto& resp = m_con->Http(m_request);
+}
+
+
+void AvTransport::Play(int instanceId)
+{
+	m_request.actionName = "Play";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+		{"Speed", "1"},
+	};
+	m_con->Http(m_request);
+}
+
+
+void AvTransport::Pause(int instanceId)
+{
+	m_request.actionName = "Pause";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	m_con->Http(m_request);
+}
+
+
+void AvTransport::Stop(int instanceId)
+{
+	m_request.actionName = "Stop";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	m_con->Http(m_request);
+}
+
+
+void AvTransport::Next(int instanceId)
+{
+	m_request.actionName = "Next";
+	m_request.parameters = {
+		{"InstanceID", std::to_string(instanceId)},
+	};
+	m_con->Http(m_request);
+}
+
+
 //-- Rendering Control --
 
 
@@ -410,7 +532,6 @@ void DenonAct::SetBluetoothAction(int index, BluetoothAction action)
 		{"BTIndex", std::to_string(index)},
 	};
 	auto& resp = m_con->Http(m_request);
-	//return resp.body;
 }
 
 

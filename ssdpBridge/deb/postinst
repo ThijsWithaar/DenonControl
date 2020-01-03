@@ -10,5 +10,8 @@ db_get denon-server/server
 SERVER=$RET
 ssdpBridge --server $SERVER --client $CLIENT
 
+# Set capabilities, to allow running with minimal rights
+setcap CAP_NET_BROADCAST=+eip /usr/bin/ssdpBridge
+
 # Register as systemd service
 systemctl enable ssdpBridge.service

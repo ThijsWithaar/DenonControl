@@ -13,6 +13,8 @@ namespace Denon {
 namespace Upnp {
 
 
+boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp, std::string param);
+
 /// Define a SOAP request, as HTPP request
 class SoapRequest
 {
@@ -23,6 +25,33 @@ public:
 	std::map<std::string, std::string> parameters;
 
 	operator Denon::Http::Request();
+};
+
+/// As defined by http://192.168.4.7:60006/upnp/scpd/renderer_dvc/AVTransport.xml
+class AvTransport
+{
+public:
+	struct CurrentState
+	{
+	};
+
+	AvTransport(Denon::Http::BlockingConnection* con);
+
+	CurrentState GetCurrentState();
+	void GetCurrentTransportActions(int instanceId=0);
+	void GetDeviceCapabilities(int instanceId=0);
+	void GetMediaInfo(int instanceId=0);
+	void GetPositionInfo(int instanceId=0);
+	void GetTransportInfo(int instanceId=0);
+	void GetTransportSettings(int instanceId=0);
+
+	void Play(int instanceId=0);
+	void Pause(int instanceId=0);
+	void Stop(int instanceId=0);
+	void Next(int instanceId=0);
+private:
+	Denon::Http::BlockingConnection* m_con;
+	Denon::Upnp::SoapRequest m_request;
 };
 
 /// As defined by http://192.168.4.7:60006/upnp/scpd/renderer_dvc/RenderingControl.xml
@@ -178,8 +207,6 @@ private:
 	Denon::Http::BlockingConnection* m_con;
 	Denon::Upnp::SoapRequest m_request;
 };
-
-boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp, std::string param);
 
 DenonAct::AudioConfig ParseAudioConfig(const boost::property_tree::ptree& pt);
 

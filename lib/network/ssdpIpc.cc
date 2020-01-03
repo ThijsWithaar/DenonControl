@@ -29,14 +29,14 @@ size_t decodeMinisspdLen(BufferIterator pData, size_t& idx)
 void AddCodelength(std::vector<char>& dst, size_t n)
 {
 	if(n>=268435456)
-		dst.push_back((n >> 28) | 0x80);
+		dst.push_back(static_cast<char>(n >> 28) | 0x80);
 	if(n>=2097152)
-		dst.push_back((n >> 21) | 0x80);
+		dst.push_back(static_cast<char>(n >> 21) | 0x80);
 	if(n>=16384)
-		dst.push_back((n >> 14) | 0x80);
+		dst.push_back(static_cast<char>(n >> 14) | 0x80);
 	if(n>=128)
-		dst.push_back((n >> 7) | 0x80);
-	dst.push_back(n & 0x7f);
+		dst.push_back(static_cast<char>(n >> 7) | 0x80);
+	dst.push_back(static_cast<char>(n & 0x7f));
 }
 
 
@@ -54,7 +54,11 @@ void AddString(std::vector<char>& dst, std::string_view str)
 
 
 Server::Settings::Settings():
-	socketName("/var/run/minissdpd.sock")
+	#ifdef __linux__
+		socketName("/var/run/minissdpd.sock")
+	#else
+		socketName("\\\\.\\pipe\\minissdpd")
+	#endif
 {
 }
 
@@ -63,14 +67,37 @@ Server::Server(
 		boost::asio::io_context& context,
 		Ssdp::ServiceCache& cache,
 		Settings s):
-	m_acceptor(context),
+	#ifdef __linux__
+		m_acceptor(context),
+	#endif
 	m_socket(context),
 	m_cache(cache)
 {
 	if(!s.socketName.empty())
 	{
-		std::filesystem::remove(s.socketName);
-		m_acceptor = {context, boost::asio::local::stream_protocol::endpoint(s.socketName)};
+		#ifdef __linux__
+			std::filesystem::remove(s.socketName);
+			m_acceptor = {context, boost::asio::local::stream_protocol::endpoint(s.socketName)};
+		#else
+		DWORD dwOpenMode = PIPE_ACCESS_DUPLEX;
+		DWORD dwPipeMode = PIPE_TYPE_MESSAGE;
+		DWORD nMaxInstances = 1;
+		DWORD nOutBufferSize = 1 << 10;
+		DWORD nInBufferSize = 1 << 10;
+		DWORD nDefaultTimeOut = 0;
+		LPSECURITY_ATTRIBUTES lpSecurityAttributes = nullptr;
+			HANDLE handle = ::CreateNamedPipeA(
+				s.socketName.c_str(),
+				dwOpenMode,
+				dwPipeMode,
+				nMaxInstances,
+				nOutBufferSize,
+				nInBufferSize,
+				nDefaultTimeOut,
+				lpSecurityAttributes
+			);
+			m_socket = {context, handle };
+		#endif
 		#if DEBUG_LVL > 0
 			std::cout << "SSDP IPC on " << s.socketName << "\n";
 		#endif
@@ -81,6 +108,7 @@ Server::Server(
 
 void Server::ScheduleAccept()
 {
+#ifdef __linux__
 	m_acceptor.async_accept(m_socket,
 		[&](auto err)
 		{
@@ -91,13 +119,14 @@ void Server::ScheduleAccept()
 			ScheduleAccept();
 		}
 	);
+#endif
 }
 
 
 void Server::ScheduleRx()
 {
 	boost::asio::streambuf::mutable_buffers_type mutableBuffer = m_rxBuf.prepare(64);
-
+#ifdef __linux__
 	m_socket.async_receive(
 		boost::asio::buffer(mutableBuffer),
 		[&](const boost::system::error_code& error, size_t bytes_recvd)
@@ -121,6 +150,7 @@ void Server::ScheduleRx()
 			}
 		}
 	);
+#endif
 }
 
 
@@ -173,8 +203,9 @@ void Server::GetIf(std::function<bool(const Ssdp::Notify&)> condition)
 		AddString(m_txBuf, it.second.custom["USN"]);
 		nrServices++;
 	}
-
+#ifdef __linux__
 	m_socket.send(boost::asio::buffer(m_txBuf));
+#endif
 }
 
 
@@ -182,7 +213,9 @@ void Server::GetVersion()
 {
 	m_txBuf.clear();
 	AddString(m_txBuf, "1.5");
+#ifdef __linux__
 	m_socket.send(boost::asio::buffer(m_txBuf));
+#endif
 }
 
 
@@ -222,7 +255,9 @@ Client::Client(boost::asio::io_context& ioc, Settings s):
 	m_socket(ioc),
 	m_settings(s)
 {
+#ifdef __linux__
 	m_socket.connect(m_settings.socketName);
+#endif
 }
 
 
@@ -288,8 +323,9 @@ void Client::Submit(Ssdp::Notify nt)
 	AddString(m_txBuf, nt.custom["USN"]);
 	AddString(m_txBuf, nt.custom["SERVER"]);
 	AddString(m_txBuf, nt.location);
-
+#ifdef __linux__
 	m_socket.send(boost::asio::buffer(m_txBuf));
+#endif
 }
 
 
@@ -297,10 +333,12 @@ std::vector<std::string_view> Client::Dispatch(Server::RequestType rqType)
 {
 	using namespace boost::asio;
 
+#ifdef __linux__
 	size_t nSend = m_socket.send(boost::asio::buffer(m_txBuf));
 	#if DEBUG_LVL > 0
 		std::cout << "MiniIpcClient Send : " << nSend << " bytes\n";
 	#endif
+#endif
 
 	// Protocol by design has a very complex completion criterion.
 	// Alternative is to have a big buffer and issue a single socket read
@@ -368,6 +406,7 @@ std::vector<std::string_view> Client::Dispatch(Server::RequestType rqType)
 std::vector<Ssdp::Response> Client::SplitResponses(std::vector<std::string_view> strings)
 {
 	std::vector<Ssdp::Response> ret;
+	ret.reserve(strings.size()/3);
 	for(ptrdiff_t n=0; n < static_cast<ptrdiff_t>(strings.size()) - 2; n+=3)
 	{
 		Ssdp::Response r;

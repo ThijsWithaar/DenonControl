@@ -1,10 +1,11 @@
 [Unit]
 Description=SSDP Bridging deamon
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 Type=simple
 ExecStart=/usr/bin/ssdpBridge --bridge
-User=root
 ExecReload=/bin/kill -HUP $MAINPID
 
 [Install]
