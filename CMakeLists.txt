@@ -37,6 +37,14 @@ if(UNIX)
 		OUTPUT_VARIABLE LSB_RELEASE_DISTRIBUTOR
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
+	if(EXISTS /etc/arch-release)
+		set(CPACK_GENERATOR "RPM")
+		set(CPACK_SYSTEM_NAME "Arch-amd64")
+	endif()
+	if(EXISTS /etc/fedora-release)
+		set(CPACK_GENERATOR "RPM")
+		set(CPACK_SYSTEM_NAME "Fedora-amd64")
+	endif()
 	if(EXISTS /etc/debian_version)
 		set(CPACK_GENERATOR "DEB")
 

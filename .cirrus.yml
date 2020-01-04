@@ -1,0 +1,12 @@
+task:
+  container:
+    matrix:
+      - image: thijswithaar/debian:sid
+      - image: thijswithaar/ubuntu:devel
+      - image: thijswithaar/fedora:rawhide
+      - image: thijswithaar/raspbian:buster
+      - image: thijswithaar/arch:latest
+  compile_script: ./build.sh build
+  test_script: cmake --build ./build -- test
+  binaries_artifacts:
+    path: "deploy/*"

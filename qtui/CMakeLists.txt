@@ -30,7 +30,7 @@ endif()
 file(GLOB SVGS CONFIGURE_DEPENDS *.svg)
 
 #find_program (INKSCAPE NAMES inkscape PATHS "/usr/bin" NO_DEFAULT_PATH)
-find_program (MAGICK NAMES convert-im6 magick PATHS "/usr/bin" "C:/Program Files/ImageMagick-7.0.9-Q16")
+find_program (MAGICK NAMES convert-im6 magick convert PATHS "/usr/bin" "C:/Program Files/ImageMagick-7.0.9-Q16")
 foreach(SVG ${SVGS})
 	get_filename_component(SVG_WE ${SVG} NAME_WE)
 	set(PNG_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.png)
@@ -88,8 +88,8 @@ endif()
 if(UNIX)
 	# Desktop shortcut and icon
 	# https://stackoverflow.com/questions/14235798/specify-an-icon-and-menu-entry-for-cmake-cpack-application
-	set(DESKTOP_DIR "/usr/share/applications")
-	set(PIXMAPS_DIR "/usr/share/icons")
+	set(DESKTOP_DIR "${CMAKE_INSTALL_PREFIX}/share/applications")
+	set(PIXMAPS_DIR "${CMAKE_INSTALL_PREFIX}/share/icons")
 	install(FILES denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
 
