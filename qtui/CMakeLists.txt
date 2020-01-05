@@ -35,6 +35,7 @@ foreach(SVG ${SVGS})
 	get_filename_component(SVG_WE ${SVG} NAME_WE)
 	set(PNG_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.png)
 	set(ICO_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.ico)
+	set(SVG_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.svg)
 
 	add_custom_command(OUTPUT ${PNG_OUT}
 		#COMMAND ${INKSCAPE} -z ${SVG} -w 64 -h 64 -e ${PNG_OUT}
@@ -49,10 +50,11 @@ foreach(SVG ${SVGS})
 		DEPENDS ${PNG_OUT}
 	)
 
-	add_custom_target(${NAME_WE}_gen DEPENDS ${PNG_OUT} ${ICO_OUT})
-	configure_file(${SVG} ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.svg COPYONLY)
+	configure_file(${SVG} ${SVG_OUT} COPYONLY)
+	add_custom_target(${NAME_WE}_gen DEPENDS ${PNG_OUT} ${ICO_OUT} ${SVG_OUT})
 	add_dependencies(${PROJECT_NAME} ${NAME_WE}_gen)
 endforeach()
+
 # Copy the .qrc, to allow local paths there
 configure_file(main.qrc ${CMAKE_CURRENT_BINARY_DIR}/main.qrc COPYONLY)
 target_sources(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/main.qrc)
@@ -61,6 +63,9 @@ if(WIN32)
 	target_sources(${PROJECT_NAME} PRIVATE denon.rc)
 endif()
 
+if(UNIX)
+	execute_process(COMMAND ls -al ${CMAKE_CURRENT_BINARY_DIR})
+endif()
 
 target_include_directories(${PROJECT_NAME}
 	PRIVATE

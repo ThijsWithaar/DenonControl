@@ -38,7 +38,7 @@ if(UNIX)
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
 	if(EXISTS /etc/arch-release)
-		set(CPACK_GENERATOR "RPM")
+		set(CPACK_GENERATOR "TXZ")
 		set(CPACK_SYSTEM_NAME "Arch-amd64")
 	endif()
 	if(EXISTS /etc/fedora-release)

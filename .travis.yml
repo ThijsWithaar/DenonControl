@@ -5,49 +5,30 @@ matrix:
   include:
     - os: linux
       services: docker
-      dist: xenial
       env:
-        - DOCKER_BUILD_DIR=${TRAVIS_BUILD_DIR}
         - DOCKER_IMAGE=thijswithaar/debian:sid
-        - CMAKE="docker exec img_debian cmake"
-        - CMAKE_SETUP="-GNinja"
-      install:
-        - docker run -it -d --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} --name img_debian ${DOCKER_IMAGE}
 
   include:
     - os: linux
       services: docker
-      dist: xenial
       env:
-        - DOCKER_BUILD_DIR=${TRAVIS_BUILD_DIR}
         - DOCKER_IMAGE=thijswithaar/fedora:rawhide
-        - CMAKE="docker exec img_fedora cmake"
-        - CMAKE_SETUP="-GNinja"
-      install:
-        - docker run -it -d --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} --name img_fedora ${DOCKER_IMAGE}
 
   include:
     - os: linux
       services: docker
-      dist: xenial
       env:
-        - DOCKER_BUILD_DIR=${TRAVIS_BUILD_DIR}
         - DOCKER_IMAGE=thijswithaar/ubuntu:devel
-        - CMAKE="docker exec img_ubuntu cmake"
-        - CMAKE_SETUP="-GNinja"
-      install:
-        - docker run -it -d --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} --name img_ubuntu ${DOCKER_IMAGE}
 
+  include:
+    - os: linux
+      services: docker
+      env:
+        - DOCKER_IMAGE=thijswithaar/arch:latest
 
 script:
- - ${CMAKE} ${CMAKE_SETUP} -DCMAKE_BUILD_TYPE=MinSizeRel -H${TRAVIS_BUILD_DIR} -B${TRAVIS_BUILD_DIR}/build
- - ${CMAKE} --build ${TRAVIS_BUILD_DIR}/build
- - ${CMAKE} --build ${TRAVIS_BUILD_DIR}/build -- package test
- - mkdir -p deploy
- - cp *.deb *.zip *.rpm deploy/ 2>/dev/null
- - ls build
- - ls build/deploy
-
+ - export DOCKER_BUILD_DIR=${TRAVIS_BUILD_DIR}
+ - docker run --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} ${DOCKER_IMAGE} ${DOCKER_BUILD_DIR}/build.sh build
 
 deploy:
  provider: releases
@@ -56,7 +37,7 @@ deploy:
  name: "It's a release"
  api_key: ${GithubToken}
  file_glob: true
- file: "${TRAVIS_BUILD_DIR}/build/deploy/*"
+ file: "${TRAVIS_BUILD_DIR}/deploy/*"
  overwrite: true
  skip_cleanup: true
  draft: false
