@@ -40,6 +40,6 @@ endif()
 
 if(UNIX)
 	# Directory with systemd unit files
-	set (SYSTEMD_UNIT_DIR "${CMAKE_INSTALL_PREFIX}/lib/systemd/user/")
+	set (SYSTEMD_UNIT_DIR "lib/systemd/user/")
 	install(FILES ssdpBridge.service DESTINATION ${SYSTEMD_UNIT_DIR} COMPONENT server)
 endif()

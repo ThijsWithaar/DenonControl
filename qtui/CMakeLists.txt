@@ -63,10 +63,6 @@ if(WIN32)
 	target_sources(${PROJECT_NAME} PRIVATE denon.rc)
 endif()
 
-if(UNIX)
-	execute_process(COMMAND ls -al ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 target_include_directories(${PROJECT_NAME}
 	PRIVATE
 		${CMAKE_CURRENT_BINARY_DIR}	# for version.h
@@ -93,8 +89,8 @@ endif()
 if(UNIX)
 	# Desktop shortcut and icon
 	# https://stackoverflow.com/questions/14235798/specify-an-icon-and-menu-entry-for-cmake-cpack-application
-	set(DESKTOP_DIR "${CMAKE_INSTALL_PREFIX}/share/applications")
-	set(PIXMAPS_DIR "${CMAKE_INSTALL_PREFIX}/share/icons")
+	set(DESKTOP_DIR "share/applications")
+	set(PIXMAPS_DIR "share/icons")
 	install(FILES denon.desktop DESTINATION ${DESKTOP_DIR} COMPONENT gui)
 	install(FILES ${CMAKE_CURRENT_BINARY_DIR}/denon.png DESTINATION ${PIXMAPS_DIR} COMPONENT gui)
 
