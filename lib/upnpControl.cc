@@ -26,9 +26,8 @@ boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp,
 {
 	auto pt = ParseXml(resp.body);
 	auto acr = pt.get<std::string>("s:Envelope.s:Body." + param);
-	auto ud = xmlDecode(acr);
-	//std::cout << ud << "\n";
-	return ParseXml(ud);
+	//std::cout << xmlDecode(acr) << "\n";
+	return ParseXml(acr);
 }
 
 
@@ -80,12 +79,38 @@ AvTransport::AvTransport(Denon::Http::BlockingConnection* con):
 }
 
 
+AvTransport::Metadata ParseTrackMetadata(std::string_view xml)
+{
+	auto pt = ParseXml(xml);
+	auto item = pt.get_child("DIDL-Lite.item");
+	AvTransport::Metadata r;
+	r.title = item.get<std::string>("dc:title");
+	r.creator = item.get<std::string>("dc:creator");
+
+	r.album = item.get<std::string>("upnp:album");
+
+	return r;
+}
+
+
 AvTransport::CurrentState AvTransport::GetCurrentState()
 {
 	m_request.actionName = "GetCurrentState";
 	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetCurrentStateResponse.CurrentState");
+	auto& iid = pt.get_child("Event.InstanceID");
+
+	//for(auto el: iid) std::cout << el.first << "\n";
 
 	AvTransport::CurrentState r;
+	r.transportURI = iid.get<std::string>("AVTransportURI.<xmlattr>.val");
+	r.currentMediaDuration = iid.get<std::string>("CurrentMediaDuration.<xmlattr>.val");
+	r.currentTrackURI = iid.get<std::string>("CurrentTrackURI.<xmlattr>.val");
+	r.transportState = iid.get<std::string>("TransportState.<xmlattr>.val");
+
+	auto curMd = iid.get<std::string>("CurrentTrackMetaData.<xmlattr>.val");
+	r.currentTrackMetaData = ParseTrackMetadata(curMd);
+	//std::cout << curMd << "\n";
 	return r;
 }
 
@@ -97,6 +122,11 @@ void AvTransport::GetCurrentTransportActions(int instanceId)
 		{"InstanceID", std::to_string(instanceId)},
 	};
 	auto& resp = m_con->Http(m_request);
+	//std::cout << "AvTransport::GetCurrentTransportActions: body\n" << resp.body << "\n";
+
+	auto pt = ParseXml(resp.body).get_child("s:Envelope.s:Body.u:GetCurrentTransportActionsResponse");
+
+	auto actions = pt.get<std::string>("Actions");
 }
 
 
@@ -107,6 +137,7 @@ void AvTransport::GetDeviceCapabilities(int instanceId)
 		{"InstanceID", std::to_string(instanceId)},
 	};
 	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetDeviceCapabilitiesResponse");
 }
 
 
@@ -117,16 +148,26 @@ void AvTransport::GetMediaInfo(int instanceId)
 		{"InstanceID", std::to_string(instanceId)},
 	};
 	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetMediaInfoResponse");
 }
 
 
-void AvTransport::GetPositionInfo(int instanceId)
+AvTransport::PositionInfo AvTransport::GetPositionInfo(int instanceId)
 {
 	m_request.actionName = "GetPositionInfo";
 	m_request.parameters = {
 		{"InstanceID", std::to_string(instanceId)},
 	};
 	auto& resp = m_con->Http(m_request);
+	auto pt = ParseXml(resp.body);
+	auto& pi = pt.get_child("s:Envelope.s:Body.u:GetPositionInfoResponse");
+
+	PositionInfo r;
+	auto curMd = pi.get<std::string>("TrackMetaData");
+	r.currentTrackMetaData = ParseTrackMetadata(curMd);
+	r.relTime = pi.get<std::string>("RelTime");
+
+	return r;
 }
 
 

@@ -31,8 +31,26 @@ public:
 class AvTransport
 {
 public:
+	struct Metadata
+	{
+		std::string title, creator;
+
+		std::string album;
+	};
+
 	struct CurrentState
 	{
+		std::string transportURI;
+		std::string currentMediaDuration;
+		std::string currentTrackURI;
+		std::string transportState;
+		Metadata currentTrackMetaData;
+	};
+
+	struct PositionInfo
+	{
+		Metadata currentTrackMetaData;
+		std::string relTime;
 	};
 
 	AvTransport(Denon::Http::BlockingConnection* con);
@@ -41,7 +59,7 @@ public:
 	void GetCurrentTransportActions(int instanceId=0);
 	void GetDeviceCapabilities(int instanceId=0);
 	void GetMediaInfo(int instanceId=0);
-	void GetPositionInfo(int instanceId=0);
+	PositionInfo GetPositionInfo(int instanceId=0);
 	void GetTransportInfo(int instanceId=0);
 	void GetTransportSettings(int instanceId=0);
 

@@ -30,13 +30,18 @@ Subscribe::operator std::string()
 void EventParser::operator()(std::string_view body, EventHandler& handler)
 {
 	std::stringstream bodyss;
-	bodyss << xmlDecode(body);
-	//std::cout << "Upnp::EventParser decoded:\n" << bodyss.str() << "\n";
-
 	boost::property_tree::ptree pt;
+	bodyss << body;
 	boost::property_tree::read_xml(bodyss, pt);
 
-	if(auto events = pt.get_child_optional("e:propertyset.e:property.LastChange.Event"))
+	auto lastChange = pt.get_optional<std::string>("e:propertyset.e:property.LastChange");
+	if(!lastChange)
+		return;
+	std::stringstream LastChangeSs;
+	LastChangeSs << lastChange;
+	boost::property_tree::read_xml(LastChangeSs, pt);
+
+	if(auto events = pt.get_child_optional("Event"))
 	{
 		for(auto& event: *events)
 		{
@@ -72,17 +77,31 @@ void EventParser::parseEvents(const std::string& name, const boost::property_tre
 				else
 					handler.onZoneVolume(channel, vval);
 			}
+			else if(key == "VolumeDB")
+			{
+				auto channel = val.get<std::string>("<xmlattr>.channel");
+				auto vval = val.get<double>("<xmlattr>.val");
+			}
 			else if(key == "Bass")
 				handler.onVolume(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
 			else if(key == "Treble")
 				handler.onVolume(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
 			else if(key == "Subwoofer")
 				handler.onVolume(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
+			else if(key == "Balance")
+				handler.onVolume(Denon::Channel::Balance, val.get<double>("<xmlattr>.val"));
 			else if(key == "Mute")
 			{
 				auto channel = val.get<std::string>("<xmlattr>.channel");
 				auto mval = val.get<int>("<xmlattr>.val");
 				handler.onMute(channel, mval != 0);
+			}
+			else if(key == "<xmlattr>")
+			{
+			}
+			else
+			{
+				std::cerr << "EventParser: Unimplemented key " << key << "\n";
 			}
 		}
 	}

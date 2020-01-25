@@ -11,7 +11,7 @@ namespace Denon {
 
 enum class Channel
 {
-	Master, FrontLeft, Center, Sub,
+	Master, FrontLeft, Center, Balance, Sub,
 	LFE, Bass, Treble
 };
 

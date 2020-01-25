@@ -12,6 +12,7 @@ docker run --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -
 
 docker run --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} thijswithaar/arch:latest ${DOCKER_BUILD_DIR}/build.sh build.arch
 
+docker run --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} thijswithaar/suse:tumbleweed ${DOCKER_BUILD_DIR}/build.sh build.suse
 
 # Interactive
-#docker run -it --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} thijswithaar/arch:latest /bin/bash
+#docker run -it --user $(id -u):$(id -g) -v ${TRAVIS_BUILD_DIR}:${DOCKER_BUILD_DIR} -w ${DOCKER_BUILD_DIR} thijswithaar/suse:tumbleweed /bin/bash

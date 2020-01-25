@@ -5,6 +5,7 @@ task:
       - image: thijswithaar/ubuntu:devel
       - image: thijswithaar/fedora:rawhide
       - image: thijswithaar/arch:latest
+      - image: thijswithaar/suse:tumbleweed
   compile_script: ./build.sh build
   test_script: cmake --build ./build -- test
   binaries_artifacts:
