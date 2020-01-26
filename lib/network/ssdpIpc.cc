@@ -234,7 +234,7 @@ void Server::GetUSN()
 	auto usn = ReadString();
 	GetIf([&usn](const Ssdp::Notify& n)
 	{
-		return n.custom.at("USN") == usn;
+		return n.custom.count("USN") && n.custom.at("USN") == usn;
 	});
 }
 

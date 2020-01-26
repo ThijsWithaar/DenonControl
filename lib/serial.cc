@@ -123,7 +123,12 @@ void ParseResponse(std::string_view line, Response& response)
 				if(param.substr(2) == "TX")
 					response.OnBluetooth(param == "TX ON");
 			}},
-		{"ECO"  , [&](){ response.OnEco(gEcoMode.at(param.substr(1))); }},
+		{"ECO"  , [&](){
+			auto emode = param.substr(1);
+			if(gEcoMode.count(emode) == 0)
+				throw std::runtime_error("Eco mode not found: " + emode);
+			response.OnEco(gEcoMode.at(emode));
+		}},
 		{"PW"   , [&](){ response.OnPower(param == "ON"); }},		// See also 'ZM'
 		{"MU"   , [&](){ response.OnMute(param == "ON"); }},
 		{"MV", [&]()

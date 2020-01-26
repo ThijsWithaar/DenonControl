@@ -94,7 +94,10 @@ void ParseHeader(Http::Response& dst, std::string_view data)
 			auto els = split(line);
 			if(dst.method == Method::MSearch)
 			{
-				dst.method = g_MethodLut.at(std::string(els[0]));
+				std::string mstr{els[0]};
+				if(g_MethodLut.count(mstr) == 0)
+					throw std::runtime_error("ParseHeader: method not found " + mstr);
+				dst.method = g_MethodLut.at(mstr);
 				dst.path = els[1];
 			}
 			else
