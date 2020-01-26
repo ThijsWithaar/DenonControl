@@ -326,8 +326,12 @@ void MainWindow::onResponse()
 {
 	auto nRead = m_telnet.readLine(m_telnetRxBuf.data(), m_telnetRxBuf.size());
 	std::string_view msg(m_telnetRxBuf.data(), nRead);
-
-	std::cout << "Denon: " << msg << "\n";
+	{
+		std::string s{msg};
+		std::replace( s.begin(), s.end(), '\r', ',');
+		s.erase(s.find_last_not_of(',') + 1);
+		std::cout << "Denon: " << s << "\n";
+	}
 	statusBar()->showMessage(QString::fromLocal8Bit(msg.data(), (int)msg.size()));
 	Denon::ParseResponse(msg, *this);
 }
@@ -338,7 +342,12 @@ void MainWindow::onResponse()
 
 void MainWindow::Send(const std::string& cmd)
 {
-	std::cout << "Ui: " << cmd << "\n";
+	{
+		std::string s{cmd};
+		std::replace( s.begin(), s.end(), '\r', ',');
+		s.erase(s.find_last_not_of(',') + 1);
+		std::cout << "Ui: " << s << "\n";
+	}
 	if(m_telnet.isWritable())
 		m_telnet.write(cmd.data(), cmd.size());
 }

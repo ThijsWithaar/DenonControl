@@ -93,15 +93,9 @@ AvTransport::Metadata ParseTrackMetadata(std::string_view xml)
 }
 
 
-AvTransport::CurrentState AvTransport::GetCurrentState()
+// Expects 'Event.InstanceID' as root in `iid`
+AvTransport::CurrentState ParseAvTransportState(const boost::property_tree::ptree& iid)
 {
-	m_request.actionName = "GetCurrentState";
-	auto& resp = m_con->Http(m_request);
-	auto pt = DecodeXmlResponse(resp, "u:GetCurrentStateResponse.CurrentState");
-	auto& iid = pt.get_child("Event.InstanceID");
-
-	//for(auto el: iid) std::cout << el.first << "\n";
-
 	AvTransport::CurrentState r;
 	r.transportURI = iid.get<std::string>("AVTransportURI.<xmlattr>.val");
 	r.currentMediaDuration = iid.get<std::string>("CurrentMediaDuration.<xmlattr>.val");
@@ -112,6 +106,36 @@ AvTransport::CurrentState AvTransport::GetCurrentState()
 	r.currentTrackMetaData = ParseTrackMetadata(curMd);
 	//std::cout << curMd << "\n";
 	return r;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const AvTransport::Metadata& md)
+{
+	os << "Title   : " << md.title << "\n";
+	os << "Creator : " << md.creator << "\n";
+	os << "Album   : " << md.album << "\n";
+	return os;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const AvTransport::CurrentState& cs)
+{
+	os << "transportURI         : " << cs.transportURI << "\n";
+	os << "currentMediaDuration : " << cs.currentMediaDuration << "\n";
+	os << "currentTrackURI      : " << cs.currentTrackURI << "\n";
+	os << "transportState       : " << cs.transportState << "\n";
+	os << cs.currentTrackMetaData << "\n";
+	return os;
+}
+
+
+AvTransport::CurrentState AvTransport::GetCurrentState()
+{
+	m_request.actionName = "GetCurrentState";
+	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetCurrentStateResponse.CurrentState");
+	auto& iid = pt.get_child("Event.InstanceID");
+	return ParseAvTransportState(iid);
 }
 
 
@@ -258,15 +282,11 @@ RenderingControl::RenderingControl(Denon::Http::BlockingConnection* con):
 }
 
 
-RenderingControl::CurrentState RenderingControl::GetCurrentState()
+// Expects 'Event.InstanceID' as root in `iid`
+RenderingControl::CurrentState ParseRenderingControlState(const boost::property_tree::ptree& iid)
 {
-	m_request.actionName = "GetCurrentState";
-	auto& resp = m_con->Http(m_request);
-	auto pt = DecodeXmlResponse(resp, "u:GetCurrentStateResponse.CurrentState");
-	auto iid = pt.get_child("Event.InstanceID");
-
-	CurrentState cs;
-	for(auto& it: iid)
+	RenderingControl::CurrentState cs;
+	for(const auto& it: iid)
 	{
 		if(it.first == "Mute")
 		{
@@ -301,7 +321,18 @@ RenderingControl::CurrentState RenderingControl::GetCurrentState()
 				cs.presetNames.push_back(std::string(name));
 		}
 	}
+	return cs;
+}
 
+
+RenderingControl::CurrentState RenderingControl::GetCurrentState()
+{
+	m_request.actionName = "GetCurrentState";
+	auto& resp = m_con->Http(m_request);
+	auto pt = DecodeXmlResponse(resp, "u:GetCurrentStateResponse.CurrentState");
+	auto iid = pt.get_child("Event.InstanceID");
+
+	auto cs  = ParseRenderingControlState(iid);
 	return cs;
 }
 
@@ -476,6 +507,23 @@ DenonAct::Speaker ParseSpeaker(boost::property_tree::ptree& pt)
 	s.level = pt.get<int>("level");
 	s.testTone = pt.get<int>("test_tone") != 0;
 	return s;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const DenonAct::Speaker& s)
+{
+	os << "distance: " << s.distance << ", level " << s.level;
+	return os;
+}
+
+std::ostream& operator<<(std::ostream& os, const DenonAct::SpeakerConfig& sc)
+{
+	os << "front.left  = " << sc.front.left << "\n";
+	os << "front.right = " << sc.front.right << "\n";
+	//os << "center = " << sc.center << "\n";
+	os << "rear.left   = " << sc.rear.left << "\n";
+	os << "rear.right  = " << sc.rear.right << "\n";
+	return os;
 }
 
 

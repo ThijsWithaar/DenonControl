@@ -8,6 +8,7 @@
 
 #include <Denon/string.h>
 #include <Denon/network/http.h>
+#include <Denon/upnpControl.h>
 
 
 namespace Denon {
@@ -29,19 +30,14 @@ Subscribe::operator std::string()
 
 void EventParser::operator()(std::string_view body, EventHandler& handler)
 {
-	std::stringstream bodyss;
-	boost::property_tree::ptree pt;
-	bodyss << body;
-	boost::property_tree::read_xml(bodyss, pt);
+	auto pt = ParseXml(body);
 
 	auto lastChange = pt.get_optional<std::string>("e:propertyset.e:property.LastChange");
 	if(!lastChange)
 		return;
-	std::stringstream LastChangeSs;
-	LastChangeSs << lastChange;
-	boost::property_tree::read_xml(LastChangeSs, pt);
 
-	if(auto events = pt.get_child_optional("Event"))
+	auto ptLC = ParseXml(*lastChange);
+	if(auto events = ptLC.get_child_optional("Event"))
 	{
 		for(auto& event: *events)
 		{
@@ -53,7 +49,23 @@ void EventParser::operator()(std::string_view body, EventHandler& handler)
 
 void EventParser::parseEvents(const std::string& name, const boost::property_tree::ptree& pt, EventHandler& handler)
 {
-	if(name == "FriendlyName")
+	std::optional<RenderingControl::CurrentState> rcCs;
+
+	auto val = pt.get_optional<std::string>("<xmlattr>.val");
+	//std::cout << "EventParser::parseEvents " << name << "\n";
+	if(name == "AudioConfig")
+	{
+		DenonAct::AudioConfig ac = ParseAudioConfig(ParseXml(*val));
+	}
+	else if(name == "AvrZoneStatus")
+	{
+		DenonAct::ZoneStatus zs = ParseZoneStatus(ParseXml(*val));
+	}
+	else if(name == "BTConfig")
+	{
+		DenonAct::BluetoothConfig bc = ParseBtConfig(ParseXml(*val));
+	}
+	else if(name == "FriendlyName")
 	{
 		auto val = pt.get<std::string>("<xmlattr>.val");
 		handler.onDeviceName(val);
@@ -68,54 +80,48 @@ void EventParser::parseEvents(const std::string& name, const boost::property_tre
 		// See also: RenderingControl::GetCurrentState
 		for(auto& [key, val]: pt)
 		{
-			if(key == "Volume")
+			if(key == "Volume" && !rcCs.has_value())
 			{
-				auto channel = val.get<std::string>("<xmlattr>.channel");
-				auto vval = val.get<double>("<xmlattr>.val");
-				if(channel == "Master")
-					handler.onVolume(Denon::Channel::Master, vval);
-				else
-					handler.onZoneVolume(channel, vval);
+				rcCs = ParseRenderingControlState(pt);
 			}
-			else if(key == "VolumeDB")
+			else if(key == "AVTransportURI")
 			{
-				auto channel = val.get<std::string>("<xmlattr>.channel");
-				auto vval = val.get<double>("<xmlattr>.val");
-			}
-			else if(key == "Bass")
-				handler.onVolume(Denon::Channel::Bass, val.get<double>("<xmlattr>.val"));
-			else if(key == "Treble")
-				handler.onVolume(Denon::Channel::Treble, val.get<double>("<xmlattr>.val"));
-			else if(key == "Subwoofer")
-				handler.onVolume(Denon::Channel::Sub, val.get<double>("<xmlattr>.val"));
-			else if(key == "Balance")
-				handler.onVolume(Denon::Channel::Balance, val.get<double>("<xmlattr>.val"));
-			else if(key == "Mute")
-			{
-				auto channel = val.get<std::string>("<xmlattr>.channel");
-				auto mval = val.get<int>("<xmlattr>.val");
-				handler.onMute(channel, mval != 0);
+				auto ats = ParseAvTransportState(pt);
+				//std::cout << "AvTransportState:\n" << ats << "\n";
 			}
 			else if(key == "<xmlattr>")
 			{
 			}
 			else
 			{
-				std::cerr << "EventParser: Unimplemented key " << key << "\n";
+				//std::cerr << "EventParser: Unimplemented key " << key << "\n";
 			}
 		}
 	}
+	else if(name == "NetworkConfigurationList")
+	{
+		std::vector<DenonAct::NetworkConfiguration> ncs = ParseNetworkConfigs(ParseXml(*val));
+	}
 	else if(name == "WifiApSsid")
 	{
-		auto mval = pt.get<std::string>("<xmlattr>.val");
-		handler.wifiSsid(mval);
+		handler.wifiSsid(*val);
 	}
 	else if(name == "SurroundSpeakerConfig")
 	{
-		/*auto cfg = pt.get<std::string>("<xmlattr>.val");
-		std::stringstream ss;
-		ss << urlDecode(cfg);
-		std::cout << "* SurroundSpeakerConfig *\n" << ss.str() << "\n";*/
+		DenonAct::SpeakerConfig cfg = ParseSpeakerConfig(ParseXml(*val));
+		std::cout << "SurroundSpeakerConfig:\n" << cfg << "\n";
+	}
+
+	if(rcCs.has_value())
+	{
+		// This sends all volume on each single update.
+		for(const auto& [name, val]: rcCs->channels)
+		{
+			if(name == "Master")
+				handler.onVolume(Denon::Channel::Master, val.volume);
+			else
+				handler.onZoneVolume(name, val.volume);
+		}
 	}
 }
 

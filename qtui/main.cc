@@ -15,6 +15,7 @@
 #include <denonVersion.h>
 
 #include "blockingHttp.h"
+#include "QExceptionApplication.h"
 
 
 
@@ -33,7 +34,7 @@ int main(int argc, char* argv[])
 	return 4;
 
 #elif 1
-	QApplication app(argc, argv);
+	QExceptionApplication app(argc, argv, "Denon Control");
 
 	// This determines the filename of the settings
 	app.setApplicationName(PROJECT_NAME);

@@ -12,6 +12,7 @@
 namespace Denon {
 namespace Upnp {
 
+boost::property_tree::ptree ParseXml(std::string_view resp);
 
 boost::property_tree::ptree DecodeXmlResponse(const Denon::Http::Response& resp, std::string param);
 
@@ -72,6 +73,11 @@ private:
 	Denon::Upnp::SoapRequest m_request;
 };
 
+/// Expects 'Event.InstanceID' as root in `iid`
+AvTransport::CurrentState ParseAvTransportState(const boost::property_tree::ptree& iid);
+
+std::ostream& operator<<(std::ostream& os, const AvTransport::CurrentState& cs);
+
 /// As defined by http://192.168.4.7:60006/upnp/scpd/renderer_dvc/RenderingControl.xml
 class RenderingControl
 {
@@ -107,6 +113,9 @@ private:
 	Denon::Http::BlockingConnection* m_con;
 	Denon::Upnp::SoapRequest m_request;
 };
+
+/// Expects 'Event.InstanceID' as root in `iid`
+RenderingControl::CurrentState ParseRenderingControlState(const boost::property_tree::ptree& iid);
 
 /// Description in http://192.168.4.7:60006/ACT/SCPD.xml
 class DenonAct
@@ -228,7 +237,16 @@ private:
 
 DenonAct::AudioConfig ParseAudioConfig(const boost::property_tree::ptree& pt);
 
+DenonAct::BluetoothConfig ParseBtConfig(const boost::property_tree::ptree& pt);
+
+std::vector<DenonAct::NetworkConfiguration> ParseNetworkConfigs(const boost::property_tree::ptree& pt);
+
+DenonAct::SpeakerConfig ParseSpeakerConfig(const boost::property_tree::ptree& pt);
+
 DenonAct::ZoneStatus ParseZoneStatus(const boost::property_tree::ptree& pt);
+
+std::ostream& operator<<(std::ostream& os, const DenonAct::SpeakerConfig& sc);
+
 
 } // namespace Upnp
 } // namespace Denon
