@@ -36,12 +36,19 @@ void SsdpClient::onRead()
 		auto sz = m_socket.readDatagram(m_rxBuf.data(), m_rxBuf.size());
 		std::string_view msg(m_rxBuf.data(), sz);
 
-		auto sn = Ssdp::Parse(msg);
-		if(auto pNotify = std::get_if<Ssdp::Notify>(&sn))
+		try
 		{
-			QUrl url(QString::fromStdString(pNotify->location));
-			//std::cout << "SsdpClient::onRead Notify " << pNotify->location << "\n";
-			emit deviceFound(QString::fromStdString(pNotify->nt), QHostAddress(url.host()));
+			auto sn = Ssdp::Parse(msg);
+			if(auto pNotify = std::get_if<Ssdp::Notify>(&sn))
+			{
+				QUrl url(QString::fromStdString(pNotify->location));
+				//std::cout << "SsdpClient::onRead Notify " << pNotify->location << "\n";
+				emit deviceFound(QString::fromStdString(pNotify->nt), QHostAddress(url.host()));
+			}
+		}
+		catch(std::exception& e)
+		{
+			std::throw_with_nested(std::runtime_error("Ssdp Parse error"));
 		}
 	}
 };

@@ -333,7 +333,15 @@ void MainWindow::onResponse()
 		std::cout << "Denon: " << s << "\n";
 	}
 	statusBar()->showMessage(QString::fromLocal8Bit(msg.data(), (int)msg.size()));
-	Denon::ParseResponse(msg, *this);
+
+	try
+	{
+		Denon::ParseResponse(msg, *this);
+	}
+	catch(std::exception& e)
+	{
+		std::throw_with_nested(std::runtime_error("Serial Parsing of:" + std::string(msg) + "\n"));
+	}
 }
 
 

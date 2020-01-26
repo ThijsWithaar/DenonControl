@@ -115,7 +115,14 @@ void UpnpEvents::onCbRead()
 	while(auto pPacket = m_cbParser.markRead(nRead))
 	{
 		Denon::Upnp::EventParser parser;
-		parser(pPacket->body, *this);
+		try
+		{
+			parser(pPacket->body, *this);
+		}
+		catch(std::exception& e)
+		{
+			std::throw_with_nested(std::runtime_error("UpnpEvents.onCbRead: Parsing failed"));
+		}
 
 		Denon::Http::Response resp;
 		resp.status = 200;

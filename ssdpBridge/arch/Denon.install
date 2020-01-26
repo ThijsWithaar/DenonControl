@@ -1,0 +1,7 @@
+post_install() {
+	systemctl enable ssdpBridge.service
+}
+
+pre_remove() {
+	systemctl disable ssdpBridge.service
+}
