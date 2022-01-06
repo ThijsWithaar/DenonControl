@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <Denon/network/ssdp.h>
 #include <Denon/upnpControl.h>
@@ -9,7 +9,7 @@
 
 
 #ifdef HAS_BOOST_BEAST
-TEST_CASE("Capture AvTransport", "[!hide]")
+TEST_CASE("Capture AvTransport", "[.][dump]")
 {
 	boost::asio::io_context ioc;
 	Denon::Http::BeastConnection conn(ioc, "192.168.4.7", Ssdp::port);

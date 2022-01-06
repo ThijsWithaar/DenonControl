@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 #include <iostream>
 
@@ -13,7 +13,7 @@
 #ifdef HAS_BOOST_BEAST
 
 // This generates the capture used for the tests below
-TEST_CASE("Capture Control", "[!hide]")
+TEST_CASE("Capture Control", "[.][dump]")
 {
 	using namespace Denon::Upnp;
 

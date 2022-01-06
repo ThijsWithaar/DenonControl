@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 #include <iostream>
 
@@ -115,7 +115,7 @@ std::ostream& operator<<(std::ostream& os, Ssdp::Notify n)
 
 
 #ifdef HAS_BOOST_BEAST
-TEST_CASE("Capture SSDP", "[!hide]")
+TEST_CASE("Capture SSDP", "[.][dump]")
 {
 	const std::string discoverIp = "192.168.3.10";
 	auto itf = boost::asio::ip::make_address_v4(discoverIp);
@@ -139,7 +139,7 @@ TEST_CASE("Capture SSDP", "[!hide]")
 }
 
 
-TEST_CASE("Run SSDP Client", "[!hide]")
+TEST_CASE("Run SSDP Client", "[.][manual]")
 {
 	auto itf = boost::asio::ip::make_address_v4("192.168.3.10");
 	boost::asio::io_context ioc;
@@ -163,7 +163,7 @@ TEST_CASE("Run SSDP Client", "[!hide]")
 
 
 
-TEST_CASE("MiniSSDP Client", "[!hide]")
+TEST_CASE("MiniSSDP Client", "[.][manual]")
 {
 	boost::asio::io_context ioc;
 

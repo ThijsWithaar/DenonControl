@@ -16,7 +16,7 @@
    id="svg8"
    inkscape:version="0.92.4 (5da689c313, 2019-01-14)"
    sodipodi:docname="denon.svg"
-   inkscape:export-filename="/home/thijs/gitrepo/denon/qtui/denon.png"
+   inkscape:export-filename="denon.png"
    inkscape:export-xdpi="192.00002"
    inkscape:export-ydpi="192.00002">
   <defs
@@ -108,7 +108,7 @@
     <path
        inkscape:connector-curvature="0"
        id="path823"
-       style="font-style:normal;font-weight:normal;font-size:5.07060289px;line-height:1.25;font-family:sans-serif;letter-spacing:0px;word-spacing:0px;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.12676507"
+       style="line-height:1.25;fill:#ffffff;fill-opacity:1;stroke:none;stroke-width:0.12676507"
        d="m 1.0856783,293.5604 v 2.64583 l 0.6041148,-3.8e-4 c 0.5100312,-3.3e-4 0.883064,0.0129 1.1190979,-0.21817 0.2376845,-0.23108 0.4222267,-0.60413 0.4222267,-1.10261 0,-0.49517 -0.1845422,-0.84921 -0.4222267,-1.07864 -0.2360339,-0.23108 -0.6090815,-0.25455 -1.1190979,-0.25065 z m -0.50012781,-0.39687 1.02749031,4.4e-4 c 0.7163547,3.2e-4 1.2420667,0.0342 1.5771358,0.33298 0.3350691,0.2971 0.512939,0.75222 0.512939,1.38605 0,0.63713 -0.1786952,1.11541 -0.5154149,1.41417 -0.3367197,0.29875 -0.8616064,0.3067 -1.5746599,0.30639 l -1.02749031,-4.5e-4 z"
        sodipodi:nodetypes="ccscscsccscscscc" />
   </g>
