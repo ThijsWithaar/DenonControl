@@ -2,6 +2,8 @@
 
 #include <array>
 #include <functional>
+#include <map>
+#include <string>
 #include <string_view>
 #include <variant>
 

@@ -138,35 +138,36 @@ void UpnpEvents::onCbRead()
 
 void UpnpEvents::onDeviceName(std::string_view name)
 {
-	emit deviceName(QString::fromStdString(std::string(name)));
+	// TO-DO: replace Q_EMIT by emit after updating boost >1.77: https://github.com/qbittorrent/qBittorrent/issues/15402
+	Q_EMIT deviceName(QString::fromStdString(std::string(name)));
 }
 
 
 void UpnpEvents::onPower(bool on)
 {
-	emit power(on);
+	Q_EMIT power(on);
 }
 
 
 void UpnpEvents::onVolume(Denon::Channel c, double vol)
 {
-	emit volumeChanged(c, vol);
+	Q_EMIT volumeChanged(c, vol);
 }
 
 
 void UpnpEvents::onZoneVolume(std::string_view name, double vol)
 {
-	emit zoneVolumeChanged(QString::fromStdString(std::string(name)), vol);
+	Q_EMIT zoneVolumeChanged(QString::fromStdString(std::string(name)), vol);
 }
 
 
 void UpnpEvents::onMute(std::string_view channel, bool muted)
 {
-	emit mute(QString::fromStdString(std::string(channel)), muted);
+	Q_EMIT mute(QString::fromStdString(std::string(channel)), muted);
 }
 
 
 void UpnpEvents::wifiSsid(std::string_view ssid)
 {
-	emit wifiSsid(QString::fromStdString(std::string(ssid)));
+	Q_EMIT wifiSsid(QString::fromStdString(std::string(ssid)));
 }

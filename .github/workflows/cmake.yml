@@ -9,8 +9,56 @@ on:
 env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: RelWithDebInfo
+  VCPKG_REF: '408ffb232c30189278a3deb30fb51622036692d5'
 
 jobs:
+  build-windows:
+    runs-on: windows-latest
+    # QT takes a long time to build under vcpkg
+    timeout-minutes: 360
+    env:
+      VCPKG_ROOT: 'D:\vcpkg'
+      VCPKG_BINARY_SOURCES: 'clear;files,${{ github.workspace }}\vcpkg.cache,readwrite'
+      CMAKE_TOOLCHAIN_FILE: 'D:\vcpkg\scripts\buildsystems\vcpkg.cmake'
+
+    steps:
+    - name: Checkout source code
+      uses: actions/checkout@v2
+
+    - name: Install tools (Chocolatey)
+      run: choco install --no-progress imagemagick.app
+
+    - name: Install CMake
+      uses: lukka/get-cmake@latest
+
+    - name: Cache Vcpkg
+      uses: actions/cache@v2
+      with:
+        path: ${{ github.workspace }}\vcpkg.cache
+        key: ${{ runner.os }}-${{ env.VCPKG_REF }}-${{ hashFiles('**/vcpkg.json') }}
+
+    - name: Install Vcpkg
+      run: |
+        git clone https://github.com/microsoft/vcpkg ${{ env.VCPKG_ROOT }}
+        git -C ${{ env.VCPKG_ROOT }} checkout ${{ env.VCPKG_REF }}
+        echo.set(VCPKG_BUILD_TYPE release)>> ${{ env.VCPKG_ROOT }}\triplets\x64-windows.cmake
+        call ${{ env.VCPKG_ROOT }}\bootstrap-vcpkg.bat
+      shell: cmd
+
+    - name: Build
+      uses: lukka/run-cmake@v10
+      with:
+        configurePreset: 'windows'
+        buildPreset: 'windows'
+        testPreset: 'windows'
+
+    - name: Store artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: Windows installer
+        path: ${{github.workspace}}/build/windows/*.exe
+
+
   build-ubuntu:
     # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
     # You can convert this to a matrix build if you need cross-platform coverage.
@@ -25,7 +73,7 @@ jobs:
       run: |
         sudo apt-get install -y ghostscript imagemagick
         sudo apt-get install -y libboost-all-dev qtbase5-dev qttools5-dev
-        sudo git clone https://github.com/catchorg/Catch2.git /tmp/catch2
+        sudo git clone -b v2.x https://github.com/catchorg/Catch2.git /tmp/catch2
         sudo cmake -H/tmp/catch2 -B/tmp/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
         sudo cmake --build /tmp/catch2.build -- install
 

@@ -1,0 +1,17 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
+  "name": "denon",
+  "version": "0.1",
+  "builtin-baseline": "408ffb232c30189278a3deb30fb51622036692d5",
+  "dependencies": [
+    "boost-asio",
+    "boost-beast",
+    "boost-system",
+    "boost-program-options",
+    "boost-property-tree",
+    "boost-serialization",
+    "catch2",
+    "qt5-base",
+    "qt5-tools"
+  ]
+}

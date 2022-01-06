@@ -27,7 +27,7 @@ endforeach()
 
 target_link_libraries(${PROJECT_NAME}
 	Denon
-	Catch2::Catch2WithMain
+	Catch2::Catch2
 )
 
 include(CTest)

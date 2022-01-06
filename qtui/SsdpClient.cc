@@ -43,7 +43,8 @@ void SsdpClient::onRead()
 			{
 				QUrl url(QString::fromStdString(pNotify->location));
 				//std::cout << "SsdpClient::onRead Notify " << pNotify->location << "\n";
-				emit deviceFound(QString::fromStdString(pNotify->nt), QHostAddress(url.host()));
+				// TO-DO: replace Q_EMIT by emit after updating boost >1.77: https://github.com/qbittorrent/qBittorrent/issues/15402
+				Q_EMIT deviceFound(QString::fromStdString(pNotify->nt), QHostAddress(url.host()));
 			}
 		}
 		catch(std::exception& e)

@@ -81,7 +81,7 @@ MainWindow::MainWindow(QWidget* parent):
 
 	SetupCommandConnections();
 	SetupTelnet();
-	SetupHttp();
+	//SetupHttp();	// Denon::Http::Parser has a bug causing exceptions
 	SetupTrayIcon();
 
 	// UI state

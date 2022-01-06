@@ -29,7 +29,8 @@ endif()
 # Create the icons
 file(GLOB SVGS CONFIGURE_DEPENDS *.svg)
 
-find_program (MAGICK NAMES convert-im6 magick convert PATHS "/usr/bin" "C:/Program Files/ImageMagick-7.0.9-Q16")
+find_program(MAGICK NAMES convert-im6 magick convert PATHS "/usr/bin" "C:/Program Files/ImageMagick-7.0.9-Q16" "C:/Program Files/ImageMagick-7.1.0-Q16-HDRI")
+message("!! MAGICK is at ${MAGICK}")
 foreach(SVG ${SVGS})
 	get_filename_component(SVG_WE ${SVG} NAME_WE)
 	set(PNG_OUT ${CMAKE_CURRENT_BINARY_DIR}/${SVG_WE}.png)
@@ -44,14 +45,14 @@ foreach(SVG ${SVGS})
 	)
 
 	add_custom_command(OUTPUT ${ICO_OUT}
-		COMMAND ${MAGICK} -background transparent ${PNG_OUT} -define icon:auto-resize=16,32,48,64 ${ICO_OUT}
+		COMMAND ${MAGICK} -background transparent ${SVG} -define icon:auto-resize=16,32,48,64 ${ICO_OUT}
 		COMMENT Generating ${ICO_OUT}
 		DEPENDS ${PNG_OUT}
 	)
 
 	configure_file(${SVG} ${SVG_OUT} COPYONLY)
-	add_custom_target(${NAME_WE}_gen DEPENDS ${PNG_OUT} ${ICO_OUT} ${SVG_OUT})
-	add_dependencies(${PROJECT_NAME} ${NAME_WE}_gen)
+	add_custom_target(create_icon_${SVG_WE} DEPENDS ${PNG_OUT} ${ICO_OUT} ${SVG_OUT})
+	add_dependencies(${PROJECT_NAME} create_icon_${SVG_WE})
 endforeach()
 
 # Copy the .qrc, to allow local paths there
