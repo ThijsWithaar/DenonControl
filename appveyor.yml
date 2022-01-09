@@ -1,6 +1,6 @@
 image:
  - Visual Studio 2019
- - ubuntu1804
+ - ubuntu2004
 
 configuration:
  - release
@@ -8,27 +8,35 @@ configuration:
 platform:
  - x64
 
+cache:
+  - C:\Tools\vcpkg.cache -> vcpkg.json
+
 environment:
-    VCPKG_DIR: C:\Tools\vcpkg
-    VCPKG_DEFAULT_TRIPLET: x64-windows
-    QT_DIR: C:\Qt\latest\msvc2017_64
+  APPVEYOR_SAVE_CACHE_ON_ERROR: true
+  VCPKG_DIR: C:\Tools\vcpkg
+  VCPKG_BINARY_SOURCES: 'clear;files,C:\Tools\vcpkg.cache,readwrite'
+  VCPKG_REF: '408ffb232c30189278a3deb30fb51622036692d5'
+  VCPKG_DEFAULT_TRIPLET: x64-windows
+  QT_DIR: C:\Qt\5.15\msvc2019_64
+  BUILD_TYPE: RelWithDebInfo
 
 init:
  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
  - echo %CONFIGURATION%
  - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
- - cmd: echo.set(VCPKG_BUILD_TYPE %CONFIGURATION%)>> %VCPKG_DIR%\triplets\%PLATFORM%-windows.cmake
- - cmd: type %VCPKG_DIR%\triplets\x64-windows.cmake
- - cmd: set Path=%QT_DIR%\bin;%Path%
+ #- cmd: set Path=%QT_DIR%\bin;%Path%
 
 install:
  # Windows
+ - cmd: cd %VCPKG_DIR%
+ - cmd: git fetch
+ - cmd: git reset --hard %VCPKG_REF%
+ - cmd: echo.set(VCPKG_BUILD_TYPE %CONFIGURATION%)>> %VCPKG_DIR%\triplets\%PLATFORM%-windows.cmake
+ - cmd: type %VCPKG_DIR%\triplets\%PLATFORM%-windows.cmake
  - cmd: choco install imagemagick.app
  - cmd: refreshenv
- - cmd: cd %VCPKG_DIR%
- - cmd: vcpkg update
- - cmd: vcpkg install catch2 boost-beast boost-program-options boost-property-tree boost-serialization boost-system
- - cmd: vcpkg integrate install
+ #- cmd: vcpkg install catch2 boost-beast boost-program-options boost-property-tree boost-serialization boost-system
+ #- cmd: vcpkg integrate install
  - cmd: cd %APPVEYOR_BUILD_FOLDER%
  # Linux
  - sh: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
@@ -37,23 +45,23 @@ install:
  - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
  - sh: sudo apt update -q
  - sh: sudo apt install -yq build-essential ninja-build git cmake clang imagemagick
- - sh: sudo apt install -yq libboost1.70-dev qtbase5-dev qttools5-dev
+ - sh: sudo apt install -yq libboost-all-dev qtbase5-dev qttools5-dev
  #      Catch2 is not yet in a repo, so build+install ourselves
- - sh: git clone https://github.com/catchorg/Catch2.git ~/catch2
- - sh: cmake -H~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
+ - sh: git clone -b v2.x https://github.com/catchorg/Catch2.git ~/catch2
+ - sh: cmake -S~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
  - sh: sudo cmake --build ~/catch2.build -- install
 
 
 before_build:
- - cmd: cmake -G "Visual Studio 16 2019" -A x64 -T v142 -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_PREFIX_PATH=%QT_DIR% -DCMAKE_BUILD_TYPE=MinSizeRel -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
- - sh: cmake -DCMAKE_CXX_COMPILER=clang++-9 -DCMAKE_BUILD_TYPE=MinSizeRel -H${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
+ - cmd: cmake -G "Visual Studio 16 2019" -A x64 -T v142 -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
+ - sh: cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
 
 build_script:
  - cmd: cmake --build build --target package
  - sh: cmake --build ./build -- package
 
 test_script:
- #- cmd: cmake --build build --target test
+ - cmd: ctest -C ${BUILD_TYPE}
  - sh: cmake --build ./build -- test
 
 artifacts:

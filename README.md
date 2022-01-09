@@ -25,7 +25,9 @@ A Library and UI for controlling [Denon Receivers](https://www.denon.com), for l
 
 # Denon Protocols
 
-Denon receivers have two ways on communicating. On is the legacy [serial protocol](https://usa.denon.com/us/product/hometheater/receivers/avr3808ci?docname=AVR-3808CISerialProtocol_Ver520a.pdf) which is reachable over telnet (port 23). The other is a combination of HTTP based protocols. An overview is given in the table below:
+Denon receivers have two ways on communicating.
+One is the legacy [serial protocol](https://usa.denon.com/us/product/hometheater/receivers/avr3808ci?docname=AVR-3808CISerialProtocol_Ver520a.pdf) which is reachable over telnet (port 23).
+The other is a combination of HTTP based protocols. An overview is given in the table below:
 
 
 | Port | Protocol | Path | description |
