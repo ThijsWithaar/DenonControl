@@ -1,6 +1,6 @@
 #include <Denon/network/ssdpBridge.h>
 
-#define DEBUG_LVL 1
+//#define DEBUG_LVL 2
 #ifdef DEBUG_LVL
 	#include <iostream>
 #endif
@@ -73,8 +73,10 @@ void Bridge::OnReceiveFromServer(boost::asio::ip::address_v4 sender, const std::
 			m_cache.services[key] = *pNotify;
 		}
 
-		//std::cout << "Server: Notify -> client\n";
-		//m_Client.send(data);
+		#if DEBUG_LVL > 0
+			std::cout << "Server: Notify -> client\n";
+		#endif
+		m_Client.broadcast(data);
 	}
 	else if(auto pResponse = std::get_if<Ssdp::Response>(&sn))
 	{
