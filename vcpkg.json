@@ -2,7 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg/master/scripts/vcpkg.schema.json",
   "name": "denon",
   "version": "0.1",
-  "builtin-baseline": "408ffb232c30189278a3deb30fb51622036692d5",
+  "builtin-baseline": "000d1bda1ffa95a73e0b40334fa4103d6f4d3d48",
   "dependencies": [
     "boost-asio",
     "boost-beast",

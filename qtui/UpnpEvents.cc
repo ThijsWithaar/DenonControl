@@ -1,14 +1,13 @@
 #include "UpnpEvents.h"
 
+#include <iostream>
+#include <sstream>
 #include <boost/property_tree/xml_parser.hpp>
 
 
 #include <Denon/network/http.h>
 #include <Denon/string.h>
 #include <Denon/upnpEvent.h>
-
-#include <iostream>
-#include <sstream>
 
 
 constexpr int listenPort = 49200;
@@ -121,7 +120,7 @@ void UpnpEvents::onCbRead()
 		}
 		catch(std::exception& e)
 		{
-			std::throw_with_nested(std::runtime_error("UpnpEvents.onCbRead, parsing failed: "sv + e.what()));
+			std::throw_with_nested(std::runtime_error(std::string("UpnpEvents.onCbRead, parsing failed: ") + e.what()));
 		}
 
 		Denon::Http::Response resp;

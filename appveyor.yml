@@ -1,6 +1,6 @@
 image:
- - Visual Studio 2019
- - ubuntu2004
+ - Visual Studio 2022
+ - ubuntu2204
 
 configuration:
  - release
@@ -15,7 +15,7 @@ environment:
   APPVEYOR_SAVE_CACHE_ON_ERROR: true
   VCPKG_DIR: C:\Tools\vcpkg
   VCPKG_BINARY_SOURCES: 'clear;files,C:\Tools\vcpkg.cache,readwrite'
-  VCPKG_REF: '408ffb232c30189278a3deb30fb51622036692d5'
+  VCPKG_REF: '000d1bda1ffa95a73e0b40334fa4103d6f4d3d48'
   VCPKG_DEFAULT_TRIPLET: x64-windows
   QT_DIR: C:\Qt\5.15\msvc2019_64
   BUILD_TYPE: RelWithDebInfo
@@ -23,7 +23,7 @@ environment:
 init:
  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
  - echo %CONFIGURATION%
- - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+ - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
  #- cmd: set Path=%QT_DIR%\bin;%Path%
 
 install:
@@ -42,18 +42,18 @@ install:
  - sh: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
  - sh: sudo add-apt-repository ppa:mhier/libboost-latest
  - sh: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
- - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ bionic main'
+ - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
  - sh: sudo apt update -q
  - sh: sudo apt install -yq build-essential ninja-build git cmake clang imagemagick
  - sh: sudo apt install -yq libboost-all-dev qtbase5-dev qttools5-dev
  #      Catch2 is not yet in a repo, so build+install ourselves
- - sh: git clone -b v2.x https://github.com/catchorg/Catch2.git ~/catch2
+ - sh: git clone -b v3.4.0 https://github.com/catchorg/Catch2.git ~/catch2
  - sh: cmake -S~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr
  - sh: sudo cmake --build ~/catch2.build -- install
 
 
 before_build:
- - cmd: cmake -G "Visual Studio 16 2019" -A x64 -T v142 -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
+ - cmd: cmake -G "Visual Studio 17 2022" -A x64 -DVCPKG_TARGET_TRIPLET=%VCPKG_DEFAULT_TRIPLET% -DCMAKE_TOOLCHAIN_FILE=C:/Tools/vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -H%APPVEYOR_BUILD_FOLDER% -B%APPVEYOR_BUILD_FOLDER%/build
  - sh: cmake -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -S${APPVEYOR_BUILD_FOLDER} -B${APPVEYOR_BUILD_FOLDER}/build
 
 build_script:
