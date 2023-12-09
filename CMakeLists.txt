@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_SOURCE_DIR}/cmake)
 
 project(Denon
-	VERSION 0.2.1
+	VERSION 0.2.2
 	DESCRIPTION "Denon Audio/Video-Receiver control"
 )
 
@@ -32,10 +32,10 @@ set(CPACK_DEBIAN_PACKAGE_SECTION "sound")
 #set(CPACK_DEBIAN_PACKAGE_DEPENDS "libqt5gui5, libboost-system1.67.0")
 set(CPACK_DEBIAN_PACKAGE_SHLIBDEPS ON)
 
-set(CPACK_ARCH_PACKAGE_ARCHITECTURE "x86_64")
-set(CPACK_ARCH_PACKAGE_LICENSE_NAME "GPLv2")
-set(CPACK_ARCH_PACKAGE_DEPENDS "boost-libs" "libc")
-set(CPACK_ARCH_EPOCH 42)
+set(CPACK_PKGBUILD_PACKAGE_ARCHITECTURE "x86_64")
+set(CPACK_PKGBUILD_PACKAGE_LICENSE_NAME "GPLv2")
+set(CPACK_PKGBUILD_PACKAGE_DEPENDS "boost-libs" "libc")
+set(CPACK_PKGBUILD_EPOCH 42)
 
 
 if(UNIX)
@@ -45,7 +45,7 @@ if(UNIX)
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
 	if(EXISTS /etc/arch-release)
-		set(CPACK_GENERATOR "Arch" CACHE STRING "Package format")
+		set(CPACK_GENERATOR "PkgBuild" CACHE STRING "Package format")
 		set(CPACK_SYSTEM_NAME "Arch-amd64")
 	endif()
 	if(EXISTS /etc/fedora-release)

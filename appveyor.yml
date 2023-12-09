@@ -1,5 +1,5 @@
 image:
- - Visual Studio 2022
+ - Visual Studio 2022 # Timeout on vcpkg build, requires multiple runs with APPVEYOR_SAVE_CACHE_ON_ERROR
  - ubuntu2204
 
 configuration:
@@ -23,7 +23,7 @@ environment:
 init:
  - echo %APPVEYOR_BUILD_WORKER_IMAGE%
  - echo %CONFIGURATION%
- - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
+ - cmd: call "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvars64.bat"
  #- cmd: set Path=%QT_DIR%\bin;%Path%
 
 install:
@@ -40,12 +40,14 @@ install:
  - cmd: cd %APPVEYOR_BUILD_FOLDER%
  # Linux
  - sh: sudo bash -c "$(wget -O - https://apt.llvm.org/llvm.sh)"
+ - sh: export CC=/usr/bin/clang-17
+ - sh: export CXX=/usr/bin/clang++-17
  - sh: sudo add-apt-repository ppa:mhier/libboost-latest
  - sh: wget -O - https://apt.kitware.com/keys/kitware-archive-latest.asc 2>/dev/null | sudo apt-key add -
  - sh: sudo apt-add-repository 'deb https://apt.kitware.com/ubuntu/ jammy main'
  - sh: sudo apt update -q
- - sh: sudo apt install -yq build-essential ninja-build git cmake clang imagemagick
- - sh: sudo apt install -yq libboost-all-dev qtbase5-dev qttools5-dev
+ - sh: sudo apt install -yq build-essential ninja-build libstdc++-12-dev git cmake clang imagemagick
+ - sh: sudo apt install -yq --no-upgrade libboost-all-dev qtbase5-dev qttools5-dev
  #      Catch2 is not yet in a repo, so build+install ourselves
  - sh: git clone -b v3.4.0 https://github.com/catchorg/Catch2.git ~/catch2
  - sh: cmake -S~/catch2 -B~/catch2.build -DBUILD_TESTING=OFF -DCMAKE_INSTALL_PREFIX=/usr

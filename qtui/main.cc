@@ -41,6 +41,7 @@ int main(int argc, char* argv[])
 	app.setOrganizationName(PACKAGE_VENDOR);
 	app.setOrganizationDomain("withaar.net");
 	app.setApplicationVersion(PROJECT_VERSION);
+	app.setDesktopFileName("denon"); // This should match the "denon.desktop" stem.
 
 	MainWindow main(nullptr);
 	main.show();

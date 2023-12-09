@@ -128,7 +128,7 @@ void Server::ScheduleRx()
 	boost::asio::streambuf::mutable_buffers_type mutableBuffer = m_rxBuf.prepare(64);
 #ifdef __linux__
 	m_socket.async_receive(
-		boost::asio::buffer(mutableBuffer),
+		boost::asio::mutable_buffer(mutableBuffer),
 		[&](const boost::system::error_code& error, size_t bytes_recvd)
 		{
 			// https://miniupnp.tuxfamily.org/minissdpd.html
