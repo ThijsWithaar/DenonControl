@@ -24,7 +24,7 @@ enum class Source
 enum class Surround
 {
 	Direct, PureDirect, Stereo, Standard,
-	DolbyDigital, DtsSurround,
+	DolbyDigital, DolbyDigitalNeuralX, DtsSurround,
 	Neural, WideScreen, _7ChStereo,
 	SuperStadium, RockArena, JazzClub, Classic, MonoMovie, Matrix, VideoGame
 };
@@ -59,6 +59,11 @@ enum class SoundMode
 	Pure, Music, Movie, Game
 };
 
+enum class DrcMode
+{
+	Auto, Low, Mid, Hi, Off
+};
+
 /// Interface for responses
 class Response
 {
@@ -73,6 +78,7 @@ public:
 	virtual void OnBluetooth(bool on) = 0;
 	virtual void OnDynamicEq(bool on) = 0;
 	virtual void OnDynamicVolume(DynamicVolume v) = 0;
+	virtual void OnDynamicRangeControl(DrcMode v) = 0;
 	virtual void OnCinemaEq(bool on) = 0;
 	virtual void OnMultiEq(Denon::RoomEqualizer e) = 0;
 	virtual void OnSpeaker(Denon::Speaker speaker, Denon::SpeakerType type) = 0;

@@ -113,6 +113,9 @@ void MainWindow::SetupCommandConnections()
 	connect(ui.cDynVol, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
 		command.DynamicVolume(static_cast<Denon::DynamicVolume>(e));
 	});
+	connect(ui.cDRC, qOverload<int>(&QComboBox::currentIndexChanged), [&](int e){
+		command.DynamicRangeControl(static_cast<Denon::DrcMode>(e));
+	});
 	connect(ui.cCinemaEq, &QCheckBox::clicked, [&](bool b){
 		command.CinemaEq(b);
 	});
@@ -338,9 +341,9 @@ void MainWindow::onResponse()
 	{
 		Denon::ParseResponse(msg, *this);
 	}
-	catch(std::exception& e)
+	catch(const std::exception& e)
 	{
-		std::throw_with_nested(std::runtime_error("Serial Parsing of:" + std::string(msg) + "\n"));
+		std::throw_with_nested(std::runtime_error("Serial Parsing of:" + std::string(msg) + "\n" + e.what()));
 	}
 }
 
@@ -433,6 +436,13 @@ void MainWindow::OnDynamicVolume(Denon::DynamicVolume v)
 {
 	SignalBlocker block(ui.cDynVol);
 	ui.cDynVol->setCurrentIndex((int)v);
+}
+
+
+void MainWindow::OnDynamicRangeControl(Denon::DrcMode v)
+{
+	SignalBlocker block(ui.cDRC);
+	ui.cDRC->setCurrentIndex((int)v);
 }
 
 

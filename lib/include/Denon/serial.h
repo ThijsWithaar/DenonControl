@@ -39,6 +39,7 @@ public:
 	void RoomEq(RoomEqualizer e);	// Superseded by MultiEq() ?
 	void DynamicEq(bool on);
 	void DynamicVolume(DynamicVolume v);
+	void DynamicRangeControl(DrcMode v);
 	void CinemaEq(bool on);
 	void MultiEq(RoomEqualizer e);
 	void EcoMode(EcoMode e);

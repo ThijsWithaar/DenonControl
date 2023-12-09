@@ -49,7 +49,7 @@ void SsdpClient::onRead()
 		}
 		catch(std::exception& e)
 		{
-			std::throw_with_nested(std::runtime_error("Ssdp Parse error"));
+			std::throw_with_nested(std::runtime_error("Ssdp Parse error: "sv + e.what()));
 		}
 	}
 };

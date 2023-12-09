@@ -36,20 +36,6 @@
       <property name="sizeConstraint">
        <enum>QLayout::SetMinimumSize</enum>
       </property>
-      <item row="7" column="2">
-       <widget class="QCheckBox" name="cCinemaEq">
-        <property name="text">
-         <string>Cinema EQ</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="0">
-       <widget class="QLabel" name="lEco">
-        <property name="text">
-         <string>ECO mode</string>
-        </property>
-       </widget>
-      </item>
       <item row="9" column="0">
        <widget class="QLabel" name="lDynVol">
         <property name="text">
@@ -57,10 +43,97 @@
         </property>
        </widget>
       </item>
-      <item row="2" column="0">
-       <widget class="QLabel" name="lInput">
+      <item row="1" column="2">
+       <widget class="QSlider" name="sVolume">
+        <property name="orientation">
+         <enum>Qt::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="11" column="0">
+       <widget class="QLabel" name="lSoundMode">
         <property name="text">
-         <string>Input Source</string>
+         <string>Sound Mode</string>
+        </property>
+       </widget>
+      </item>
+      <item row="4" column="2">
+       <widget class="QComboBox" name="cMultiEq">
+        <item>
+         <property name="text">
+          <string>Audyssey</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>By-pass LR</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Flat</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Manual</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="2" column="2">
+       <widget class="QComboBox" name="cSource">
+        <property name="currentIndex">
+         <number>5</number>
+        </property>
+        <item>
+         <property name="text">
+          <string>Tuner</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Phono</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Cd</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Dvd</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Net/Usb</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Media Player</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="lVolume">
+        <property name="text">
+         <string>Master volume</string>
+        </property>
+       </widget>
+      </item>
+      <item row="5" column="2">
+       <widget class="QCheckBox" name="cDynEq">
+        <property name="text">
+         <string>Dynamic EQ</string>
         </property>
        </widget>
       </item>
@@ -71,10 +144,30 @@
         </property>
        </widget>
       </item>
-      <item row="4" column="0">
-       <widget class="QLabel" name="lMultiEq">
+      <item row="8" column="0">
+       <widget class="QLabel" name="lEco">
         <property name="text">
-         <string>Multi EQ</string>
+         <string>ECO mode</string>
+        </property>
+       </widget>
+      </item>
+      <item row="12" column="2">
+       <spacer name="verticalSpacer">
+        <property name="orientation">
+         <enum>Qt::Vertical</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>20</width>
+          <height>40</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="lInput">
+        <property name="text">
+         <string>Input Source</string>
         </property>
        </widget>
       </item>
@@ -109,10 +202,36 @@
         </item>
        </widget>
       </item>
-      <item row="1" column="0">
-       <widget class="QLabel" name="lVolume">
+      <item row="0" column="0">
+       <widget class="QCheckBox" name="power">
         <property name="text">
-         <string>Master volume</string>
+         <string>Power</string>
+        </property>
+       </widget>
+      </item>
+      <item row="8" column="2">
+       <widget class="QComboBox" name="cEco">
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>On</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Auto</string>
+         </property>
+        </item>
+       </widget>
+      </item>
+      <item row="4" column="0">
+       <widget class="QLabel" name="lMultiEq">
+        <property name="text">
+         <string>Multi EQ</string>
         </property>
        </widget>
       </item>
@@ -144,6 +263,11 @@
         <item>
          <property name="text">
           <string>Dolby Digital</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Dolby Digital NeuralX</string>
          </property>
         </item>
         <item>
@@ -203,126 +327,14 @@
         </item>
        </widget>
       </item>
-      <item row="0" column="0">
-       <widget class="QCheckBox" name="power">
+      <item row="7" column="2">
+       <widget class="QCheckBox" name="cCinemaEq">
         <property name="text">
-         <string>Power</string>
-        </property>
-       </widget>
-      </item>
-      <item row="8" column="2">
-       <widget class="QComboBox" name="cEco">
-        <item>
-         <property name="text">
-          <string>Off</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>On</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Auto</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="4" column="2">
-       <widget class="QComboBox" name="cMultiEq">
-        <item>
-         <property name="text">
-          <string>Audyssey</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>By-pass LR</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Flat</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Manual</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Off</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="1" column="2">
-       <widget class="QSlider" name="sVolume">
-        <property name="orientation">
-         <enum>Qt::Horizontal</enum>
+         <string>Cinema EQ</string>
         </property>
        </widget>
       </item>
       <item row="11" column="2">
-       <spacer name="verticalSpacer">
-        <property name="orientation">
-         <enum>Qt::Vertical</enum>
-        </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
-        </property>
-       </spacer>
-      </item>
-      <item row="5" column="2">
-       <widget class="QCheckBox" name="cDynEq">
-        <property name="text">
-         <string>Dynamic EQ</string>
-        </property>
-       </widget>
-      </item>
-      <item row="2" column="2">
-       <widget class="QComboBox" name="cSource">
-        <property name="currentIndex">
-         <number>5</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>Tuner</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Phono</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Cd</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Dvd</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Net/Usb</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>Media Player</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item row="10" column="2">
        <widget class="QComboBox" name="cSoundMode">
         <item>
          <property name="text">
@@ -347,10 +359,39 @@
        </widget>
       </item>
       <item row="10" column="0">
-       <widget class="QLabel" name="lSoundMode">
+       <widget class="QLabel" name="lDRC">
         <property name="text">
-         <string>Sound Mode</string>
+         <string>Dyn. Range</string>
         </property>
+       </widget>
+      </item>
+      <item row="10" column="2">
+       <widget class="QComboBox" name="cDRC">
+        <item>
+         <property name="text">
+          <string>Auto</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Low</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Mid</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>High</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>Off</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>

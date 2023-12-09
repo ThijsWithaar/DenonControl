@@ -4,7 +4,9 @@
 #include <iostream>
 #include <functional>
 #include <map>
+#include <ranges>
 #include <sstream>
+#include <string_view>
 
 
 namespace Denon {
@@ -27,6 +29,7 @@ const std::map<std::string, Surround> gSurround = {
 	{"STEREO", Surround::Stereo},
 	{"STANDARD", Surround::Standard},
 	{"DOLBY AUDIO-DD+DSUR", Surround::DolbyDigital},
+	{"DOLBY AUDIO-DD+ +NEURAL:X", Surround::DolbyDigitalNeuralX},
 	{"M CH IN+DSUR", Surround::DtsSurround},
 };
 
@@ -87,6 +90,16 @@ const std::map<std::string, SoundMode> gSoundMode = {
 };
 
 
+const std::map<std::string, DrcMode> gDynamicRangeControl = {
+	{"AUTO", DrcMode::Auto},
+	{"LOW", DrcMode::Low},
+	{"MID", DrcMode::Mid},
+	{"HI", DrcMode::Hi},
+	{"OFF", DrcMode::Off},
+};
+
+
+
 template<typename Enum>
 std::string lu(const std::map<std::string, Enum>& lut, Enum v)
 {
@@ -109,13 +122,12 @@ std::ostream& operator<<(std::ostream& os, Surround s)
 }
 
 
-void ParseResponse(std::string_view line, Response& response)
+void ParseResponse(std::string_view lines, Response& response)
 {
-	if(line.size() < 3)
+	if(lines.size() < 3)
 		return;
 
-	//std::string cmd = str.substr(0,2);
-	std::string param = std::string(line.substr(2, line.size()-3));
+	std::string param;
 
 	const std::map<std::string, std::function<void(void)>> handlers = {
 		{"BT"  , [&]()
@@ -133,7 +145,7 @@ void ParseResponse(std::string_view line, Response& response)
 		{"MU"   , [&](){ response.OnMute(param == "ON"); }},
 		{"MV", [&]()
 			{
-				if(!startswith(line, "MVMAX"))
+				if(!startswith(param, "MAX"))
 				{
 					int vol = std::stoi(param);
 					if(vol > 100)
@@ -153,7 +165,7 @@ void ParseResponse(std::string_view line, Response& response)
 			}},
 		{"SS", [&]()
 			{
-				if(line == "SSINFAISFSV")
+				if(param == "INFAISFSV")
 				{
 					std::string sr = param.substr(10);
 					if(sr == "441")
@@ -180,6 +192,12 @@ void ParseResponse(std::string_view line, Response& response)
 				{
 					response.OnCinemaEq(param == "CINEMA EQ.ON");
 				}
+				else if(startswith(param, "DRC"))
+				{
+					auto val = param.substr(4);
+					if(gDynamicRangeControl.count(val))
+						response.OnDynamicRangeControl(gDynamicRangeControl.at(val));
+				}
 				if(startswith(param, "LFE"))
 				{
 					int val = std::stoi(param.substr(4));
@@ -197,8 +215,8 @@ void ParseResponse(std::string_view line, Response& response)
 				}
 				else if(startswith(param, "ROOM"))
 				{
-					std::string_view eq = line.substr(10);
-					//std::cout << "ROOM EQ : '" << eq << "'\n";
+					std::string_view eq = param.substr(8);
+					std::cout << "ROOM EQ : '" << eq << "'\n";
 				}
 				else if(startswith(param, "DYNEQ"))
 				{
@@ -211,22 +229,41 @@ void ParseResponse(std::string_view line, Response& response)
 					if(gDynamicVolume.count(val))
 						response.OnDynamicVolume(gDynamicVolume.at(val));
 				}
+				else if(startswith(param, "MODE"))
+				{
+					auto val = param.substr(std::string_view("MODE").size() + 1);
+					std::cout << "MODE : '" << val << "'\n";
+				}
 				else if(startswith(param, "MULTEQ:"))
 				{
 					auto val = param.substr(7);
 					if(gRoomEq.count(val))
 						response.OnMultiEq(gRoomEq.at(val));
 				}
+				else if(startswith(param, "TONE"))
+				{
+					auto val = param.substr(std::string_view("TONE").size() + 1);
+				}
 			}},
 		{"ZM", [&](){ response.OnPower(param == "ON"); }},
 	};
 
-	for(auto& h: handlers)
+	std::string cmd;
+	for(auto line: lines | std::views::split('\r'))
 	{
-		if(startswith(line, h.first))
+		for (auto cmd_r : line | std::views::split(','))
 		{
-			h.second();
-			break;
+			if(cmd_r.size() < 3) continue;
+			cmd.assign(std::begin(cmd_r), std::end(cmd_r)); // cmd_r is contiguous, but the view-types don't know that.
+			param = cmd.substr(2);
+			for(auto& h: handlers)
+			{
+				if(startswith(cmd, h.first))
+				{
+					h.second();
+					break;
+				}
+			}
 		}
 	}
 }
@@ -252,6 +289,7 @@ void Command::RequestStatus()
 		"PSDYNEQ ?\r"
 		"PSDYNVOL ?\r"
 		"PSCINEMA EQ. ?\r"
+		"PSMODE: ?\r"
 		"PSMULTEQ: ?\r"
 		"ECO?\r"
 		"SSSMG ?\r"
@@ -308,6 +346,12 @@ void Command::DynamicVolume(Denon::DynamicVolume v)
 }
 
 
+void Command::DynamicRangeControl(DrcMode v)
+{
+	pConn->Send("PSDRC " + lu(gDynamicRangeControl, v) + "\r");
+}
+
+
 void Command::CinemaEq(bool v)
 {
 	pConn->Send(v ? "PSCINEMA EQ.ON\r" : "PSCINEMA EQ.OFF\r");
@@ -328,8 +372,12 @@ void Command::EcoMode(Denon::EcoMode e)
 
 void Command::SoundMode(Denon::SoundMode m)
 {
-	// This doesn't seem to do it:
-	//pConn->Send("SSSMG " + lu(gSoundMode, m) + "\r");
+	// This doesn't seem to do it, neither with ':' or without ' '
+	/*pConn->Send("SSSMG" + lu(gSoundMode, m) + "\r");
+	pConn->Send("SSSMG:" + lu(gSoundMode, m) + "\r");
+	pConn->Send("SSSMG " + lu(gSoundMode, m) + "\r");
+	pConn->Send("SSSMG: " + lu(gSoundMode, m) + "\r");
+	*/
 }
 
 

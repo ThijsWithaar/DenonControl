@@ -121,7 +121,7 @@ void UpnpEvents::onCbRead()
 		}
 		catch(std::exception& e)
 		{
-			std::throw_with_nested(std::runtime_error("UpnpEvents.onCbRead: Parsing failed"));
+			std::throw_with_nested(std::runtime_error("UpnpEvents.onCbRead, parsing failed: "sv + e.what()));
 		}
 
 		Denon::Http::Response resp;

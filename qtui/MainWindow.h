@@ -68,6 +68,7 @@ private:
 	void OnBluetooth(bool on) override;
 	void OnDynamicEq(bool on) override;
 	void OnDynamicVolume(Denon::DynamicVolume v) override;
+	void OnDynamicRangeControl(Denon::DrcMode v) override;
 	void OnCinemaEq(bool on) override;
 	void OnMultiEq(Denon::RoomEqualizer e) override;
 	void OnSpeaker(Denon::Speaker speaker, Denon::SpeakerType type) override;
